@@ -1,4 +1,4 @@
-// AURUM MCP · interactive hero globe
+// Mandate MCP · interactive hero globe
 // Dotted land, fresnel atmosphere, gold gateway nodes you can hover / click,
 // agent-transaction arcs between nodes, drag-to-spin with inertia.
 import * as THREE from 'three';
@@ -294,7 +294,7 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
       card.innerHTML = `<div class="gc__head"><i></i><b>${n.name}</b><span>${n.country}</span></div>
         <div class="gc__grid"><div><em>Agents</em><strong>${live.toLocaleString('en-US')}</strong></div>
         <div><em>Latency</em><strong>${n.ms}ms</strong></div><div><em>24h volume</em><strong>$${n.vol}</strong></div></div>
-        <div class="gc__foot">gateway-${n.name.toLowerCase().replace(/[^a-z]/g, '').slice(0, 6)}.aurum · <span>● healthy</span></div>`;
+        <div class="gc__foot">gateway-${n.name.toLowerCase().replace(/[^a-z]/g, '').slice(0, 6)}.mandate · <span>● healthy</span></div>`;
     }
     o.g.localToWorld(tmp.copy(o.top));
     tmp.project(camera);

@@ -1,4 +1,4 @@
-// AURUM MCP Playground: browser ports of the server tools, hitting the same public APIs.
+// Mandate MCP Playground: browser ports of the server tools, hitting the same public APIs.
 // Shows the exact MCP JSON-RPC frames an agent would exchange with the server.
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -203,7 +203,7 @@ function init() {
     }
     const ms = Math.round(performance.now() - t0);
     $('#pgTime').innerHTML = `<i class="${ok ? 'ok' : 'bad'}">●</i> ${ms} ms`;
-    $('#pgRpc').innerHTML = `<span class="c">// → request (client → aurum)</span>\n${hl(req)}\n\n<span class="c">// ← response (aurum → client)</span>\n${hl(res)}`;
+    $('#pgRpc').innerHTML = `<span class="c">// → request (client → mandate)</span>\n${hl(req)}\n\n<span class="c">// ← response (mandate → client)</span>\n${hl(res)}`;
     btn.disabled = false; btn.classList.remove('is-loading');
     running = false;
   });

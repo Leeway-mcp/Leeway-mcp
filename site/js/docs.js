@@ -1,4 +1,4 @@
-// AURUM Docs interactions
+// Mandate Docs interactions
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 

@@ -1,4 +1,4 @@
-// AURUM MCP · UI interactions (no dependencies)
+// Mandate MCP · UI interactions (no dependencies)
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -180,6 +180,15 @@ function renderTools(cat) {
   $('#toolList').innerHTML = TOOLS[cat].map(([n, d, t], i) =>
     `<div class="tool-item" style="animation-delay:${i * 0.05}s"><div class="tool-item__head"><code>${n}()</code>${LIVE.has(n) ? '<em class="live">● live</em>' : '<em>soon</em>'}</div><p>${d}</p><small class="${t === 'write' ? 'w' : ''}">${t === 'write' ? 'write · policy-guarded' : 'read-only'}</small></div>`).join('');
 }
+// Equity Rails (roadmap phase 4): agents managing tokenized stocks under the same mandates
+TOOLS.equity = [
+  ['get_equity_quote', 'Tokenized stock price on-chain next to the real exchange reference price.', 'read'],
+  ['parity_check', 'Parity Guard: premium/discount of a tokenized share vs. its underlying. Blocks buys outside the band.', 'read'],
+  ['market_hours', 'Is the underlying market open? Holidays, pre-market and halts.', 'read'],
+  ['corporate_actions', 'Upcoming dividends, splits and earnings for a ticker.', 'read'],
+  ['equity_mandate', 'Per-ticker caps, sector limits and a no-leverage rule for stock portfolios.', 'write'],
+  ['execute_equity', 'Buy or sell a tokenized share, only if parity and mandate both pass.', 'write'],
+];
 renderTools('market');
 $$('.tool').forEach((b) => b.addEventListener('click', () => {
   $$('.tool').forEach((x) => x.classList.toggle('is-on', x === b));

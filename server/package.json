@@ -1,10 +1,10 @@
 {
-  "name": "aurum-mcp",
+  "name": "mandate-mcp",
   "version": "0.1.0",
   "description": "Open-source MCP server that gives AI agents safe, policy-guarded access to on-chain value: prices, wallets, risk scans, gas and x402 payment quotes.",
   "type": "module",
   "main": "src/index.js",
-  "bin": { "aurum-mcp": "src/index.js" },
+  "bin": { "mandate-mcp": "src/index.js" },
   "files": ["src"],
   "scripts": {
     "start": "node src/index.js",

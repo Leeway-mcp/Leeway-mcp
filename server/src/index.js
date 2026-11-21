@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// AURUM MCP · gives AI agents safe, policy-guarded access to on-chain value.
+// Mandate MCP · gives AI agents safe, policy-guarded access to on-chain value.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import * as data from './data.js';
 import { evaluate, report, policy } from './policy.js';
 
-const server = new McpServer({ name: 'aurum-mcp', version: '0.1.0' });
+const server = new McpServer({ name: 'mandate-mcp', version: '0.1.0' });
 
 const ok = (obj) => ({ content: [{ type: 'text', text: JSON.stringify(obj, null, 2) }] });
 const fail = (err) => ({ isError: true, content: [{ type: 'text', text: `Error: ${err?.message ?? err}` }] });
@@ -129,7 +129,7 @@ server.registerTool('check_address', {
 /* ---------------- payments & policy ---------------- */
 server.registerTool('policy_check', {
   title: 'Check a spend against policy',
-  description: 'Asks the AURUM policy engine whether a proposed payment or transaction is allowed. Returns allow, needs_approval or deny with reasons. Agents MUST call this before moving funds and must respect the decision.',
+  description: 'Asks the Mandate policy engine whether a proposed payment or transaction is allowed. Returns allow, needs_approval or deny with reasons. Agents MUST call this before moving funds and must respect the decision.',
   inputSchema: {
     value_usd: z.number().nonnegative().describe('USD value of the proposed spend'),
     recipient: Address.optional().describe('Recipient address, if any. Its reputation is checked automatically.'),
@@ -175,11 +175,11 @@ server.registerTool('spending_report', {
 }, safe(() => report()));
 
 /* ---------------- resources ---------------- */
-server.registerResource('policy', 'aurum://policy', { title: 'Active spending policy', mimeType: 'application/json' },
+server.registerResource('policy', 'mandate://policy', { title: 'Active spending policy', mimeType: 'application/json' },
   async (uri) => ({ contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(policy, null, 2) }] }));
 
 function round(v, d = 2) { return v == null || Number.isNaN(v) ? null : Math.round(v * 10 ** d) / 10 ** d; }
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error('[aurum-mcp] ready · tools: get_price, trending_tokens, get_gas, get_balance, scan_token, check_address, policy_check, x402_quote, spending_report');
+console.error('[mandate-mcp] ready · tools: get_price, trending_tokens, get_gas, get_balance, scan_token, check_address, policy_check, x402_quote, spending_report');

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AURUM Docs | MCP server for the agent economy</title>
-  <meta name="description" content="Documentation for AURUM MCP: what it is, how it works, quick start, tool reference, policy engine, x402 payments, security model and roadmap." />
+  <title>Mandate Docs | MCP server for the agent economy</title>
+  <meta name="description" content="Documentation for Mandate MCP: what it is, how it works, quick start, tool reference, policy engine, x402 payments, security model and roadmap." />
   <meta name="theme-color" content="#06060a" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,15 +18,14 @@
 
   <header class="nav is-scrolled" id="nav">
     <div class="container container--wide nav__inner">
-      <a href="index.html" class="logo" aria-label="AURUM home">
+      <a href="index.html" class="logo" aria-label="Mandate home">
         <svg class="logo__mark" viewBox="0 0 40 40" aria-hidden="true">
           <defs>
             <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e7b94f"/><stop offset="1" stop-color="#7a4e12"/></linearGradient>
             <linearGradient id="lg2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d77a"/><stop offset="1" stop-color="#5a380b"/></linearGradient>
           </defs>
-          <path d="M20 3 L35 34 L20 27 Z" fill="url(#lg2)"/><path d="M20 3 L5 34 L20 27 Z" fill="url(#lg1)"/><path d="M5 34 L20 27 L35 34 L20 37 Z" fill="#8a5a17"/>
-        </svg>
-        <span>AURUM</span><em class="docs-badge">Docs</em>
+          <circle cx="20" cy="20" r="17.6" fill="none" stroke="url(#lg1)" stroke-width="2"/><circle cx="20" cy="20" r="13.8" fill="none" stroke="url(#lg2)" stroke-width=".8" opacity=".7"/><path d="M12 27.5V13.2l8 8.3 8-8.3v14.3" fill="none" stroke="url(#lg1)" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><path d="M20 6.2l1.6 2.2L20 10.6l-1.6-2.2z" fill="#fbe7a1"/></svg>
+        <span>MANDATE</span><em class="docs-badge">Docs</em>
       </a>
       <nav class="nav__links" aria-label="Primary">
         <a href="index.html">Home</a>
@@ -49,7 +48,7 @@
       <nav aria-label="Docs">
         <p class="docs-side__group">Getting started</p>
         <a href="#overview">Overview</a>
-        <a href="#why">Why AURUM exists</a>
+        <a href="#why">Why Mandate exists</a>
         <a href="#how">How it works</a>
         <a href="#quickstart">Quick start</a>
         <a href="#clients">Client setup</a>
@@ -70,7 +69,8 @@
         <a href="#policy">Policy engine</a>
         <a href="#x402">x402 payments</a>
         <a href="#security">Security model</a>
-        <a href="#token">AUR token (concept)</a>
+        <a href="#equities">Equity Rails (stocks)</a>
+        <a href="#token">MNDT token (concept)</a>
         <p class="docs-side__group">Project</p>
         <a href="#roadmap">Roadmap</a>
         <a href="#faq">FAQ</a>
@@ -83,16 +83,16 @@
 
       <section id="overview" class="doc-sec">
         <p class="label">[ Documentation · v0.1 ]</p>
-        <h1 class="docs-h1">AURUM <span class="fade">MCP</span></h1>
-        <p class="lead">AURUM is an open-source <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> server that gives AI agents safe, policy-guarded access to on-chain value. Plug it into Claude, Cursor or any MCP client, and your agent can read markets, check wallets, scan tokens for scams and price x402 payments. Every spend goes through a policy engine that you configure, and nothing the agent says can change it.</p>
+        <h1 class="docs-h1">Mandate <span class="fade">MCP</span></h1>
+        <p class="lead">Mandate is an open-source <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> server that gives AI agents safe, policy-guarded access to on-chain value. Plug it into Claude, Cursor or any MCP client, and your agent can read markets, check wallets, scan tokens for scams and price x402 payments. Every spend goes through a policy engine that you configure, and nothing the agent says can change it.</p>
         <div class="doc-cards">
           <a href="#quickstart" class="doc-card"><b>Quick start →</b><span>Install and connect your agent in under a minute.</span></a>
           <a href="#tools" class="doc-card"><b>Tool reference →</b><span>All 9 tools with parameters and real responses.</span></a>
           <a href="#policy" class="doc-card"><b>Policy engine →</b><span>How allow / approve / deny decisions are made.</span></a>
         </div>
         <figure class="shot">
-          <img src="docs/img/landing-hero.jpg" alt="AURUM landing page hero with an interactive 3D globe showing agent gateway nodes" loading="lazy" width="1440" height="900" />
-          <figcaption>The AURUM landing page. Gold nodes on the globe are gateway regions; arcs are agent-to-agent transactions.</figcaption>
+          <img src="docs/img/landing-hero.jpg" alt="Mandate landing page hero with an interactive 3D globe showing agent gateway nodes" loading="lazy" width="1440" height="900" />
+          <figcaption>The Mandate landing page. Gold nodes on the globe are gateway regions; arcs are agent-to-agent transactions.</figcaption>
         </figure>
         <h3>At a glance</h3>
         <div class="kv">
@@ -106,17 +106,17 @@
       </section>
 
       <section id="why" class="doc-sec">
-        <h2>Why AURUM exists</h2>
+        <h2>Why Mandate exists</h2>
         <p>AI agents are turning into economic actors. They call paid APIs, buy data, and soon will trade and pay each other. To do that they need money, and today the usual answer is to hand the model a private key or an exchange API key.</p>
         <p>That is dangerous. An LLM can be <strong>prompt-injected</strong>: a malicious web page, token name or email can tell it to "send everything to 0x…". With a raw key, nothing stops it.</p>
-        <p>AURUM splits <em>capability</em> from <em>authority</em>. The agent gets rich, typed tools to understand the market. Authority to spend stays in a policy engine on your machine, configured by you and enforced in code.</p>
+        <p>Mandate splits <em>capability</em> from <em>authority</em>. The agent gets rich, typed tools to understand the market. Authority to spend stays in a policy engine on your machine, configured by you and enforced in code.</p>
         <div class="compare">
           <div class="compare__col compare__col--bad">
             <h4>Raw private key in the agent</h4>
             <ul><li>Any prompt injection can drain funds</li><li>No spending limits</li><li>No idea whether a token is a scam</li><li>No audit trail</li><li>Each agent re-implements web3 plumbing</li></ul>
           </div>
           <div class="compare__col compare__col--good">
-            <h4>Agent + AURUM MCP</h4>
+            <h4>Agent + Mandate MCP</h4>
             <ul><li>Limits enforced server-side, so prompts can't change them</li><li>Daily, per-transaction and hard caps</li><li>Risk scan before every buy</li><li>Persistent spend ledger</li><li>One server works with any MCP client</li></ul>
           </div>
         </div>
@@ -124,7 +124,7 @@
 
       <section id="how" class="doc-sec">
         <h2>How it works</h2>
-        <p>AURUM runs as a local process next to your MCP client and talks to it over <code>stdio</code>. The client (Claude Desktop, Cursor, Claude Code and others) lists AURUM's tools to the model. When the model decides to call one, the request flows through AURUM to public data sources, and every spend passes through the policy engine first.</p>
+        <p>Mandate runs as a local process next to your MCP client and talks to it over <code>stdio</code>. The client (Claude Desktop, Cursor, Claude Code and others) lists Mandate's tools to the model. When the model decides to call one, the request flows through Mandate to public data sources, and every spend passes through the policy engine first.</p>
         <figure class="diagram" aria-label="Architecture diagram">
           <svg viewBox="0 0 860 380" role="img">
             <defs>
@@ -138,7 +138,7 @@
               <text x="105" y="216" text-anchor="middle" fill="#8a8a99" font-size="12">MCP client</text>
 
               <rect x="270" y="60" width="300" height="260" rx="10" fill="#120f09" stroke="url(#gGold)" stroke-width="1.5"/>
-              <text x="420" y="92" text-anchor="middle" font-weight="600" fill="#fbe7a1" font-size="15">AURUM MCP server</text>
+              <text x="420" y="92" text-anchor="middle" font-weight="600" fill="#fbe7a1" font-size="15">Mandate MCP server</text>
               <rect x="295" y="112" width="250" height="52" rx="6" fill="#0a0a10" stroke="rgba(255,255,255,.12)"/>
               <text x="420" y="134" text-anchor="middle" fill="#fff" font-weight="500">Typed tools</text>
               <text x="420" y="152" text-anchor="middle" fill="#8a8a99" font-size="11.5">market · wallets · risk · x402</text>
@@ -147,7 +147,7 @@
               <text x="420" y="218" text-anchor="middle" fill="#8a8a99" font-size="11.5">allow · needs_approval · deny</text>
               <rect x="295" y="244" width="250" height="52" rx="6" fill="#0a0a10" stroke="rgba(255,255,255,.12)"/>
               <text x="420" y="266" text-anchor="middle" fill="#fff" font-weight="500">Spend ledger</text>
-              <text x="420" y="284" text-anchor="middle" fill="#8a8a99" font-size="11.5">~/.aurum-mcp/ledger.json</text>
+              <text x="420" y="284" text-anchor="middle" fill="#8a8a99" font-size="11.5">~/.mandate-mcp/ledger.json</text>
 
               <rect x="650" y="40" width="190" height="62" rx="8" fill="#0d0d15" stroke="rgba(255,255,255,.15)"/>
               <text x="745" y="66" text-anchor="middle" fill="#fff" font-weight="500">CoinGecko</text>
@@ -173,12 +173,12 @@
               <text x="420" y="350" text-anchor="middle" fill="#5d5d6b" font-size="11.5">runs locally · your keys never leave your machine</text>
             </g>
           </svg>
-          <figcaption>Request flow: agent → MCP client → AURUM → data sources. Spends are always evaluated by the policy engine before any action.</figcaption>
+          <figcaption>Request flow: agent → MCP client → Mandate → data sources. Spends are always evaluated by the policy engine before any action.</figcaption>
         </figure>
         <ol class="steps">
-          <li><b>Discover.</b> On start, the client asks AURUM for its tool list. Each tool has a name, description and JSON schema, so the model knows when and how to call it.</li>
-          <li><b>Call.</b> The model calls a tool with arguments. AURUM validates them (bad addresses, unknown chains and negative amounts are rejected before anything runs).</li>
-          <li><b>Guard.</b> For anything involving money, AURUM evaluates the policy and returns a decision with human-readable reasons.</li>
+          <li><b>Discover.</b> On start, the client asks Mandate for its tool list. Each tool has a name, description and JSON schema, so the model knows when and how to call it.</li>
+          <li><b>Call.</b> The model calls a tool with arguments. Mandate validates them (bad addresses, unknown chains and negative amounts are rejected before anything runs).</li>
+          <li><b>Guard.</b> For anything involving money, Mandate evaluates the policy and returns a decision with human-readable reasons.</li>
           <li><b>Answer.</b> Results come back as structured JSON. The model turns them into a plain-language answer for you.</li>
         </ol>
       </section>
@@ -188,8 +188,8 @@
         <p>Requirements: <strong>Node.js 18.17+</strong> and git. No API keys and no wallet needed: every tool available today is read-only.</p>
         <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
 <pre><code><span class="c"># 1. get the code</span>
-git clone https://github.com/&lt;you&gt;/aurum-mcp
-cd aurum-mcp/server
+git clone https://github.com/&lt;you&gt;/mandate-mcp
+cd mandate-mcp/server
 
 <span class="c"># 2. install (two dependencies: MCP SDK + zod)</span>
 npm install
@@ -206,7 +206,7 @@ npm test</code></pre></div>
 
       <section id="clients" class="doc-sec">
         <h2>Client setup</h2>
-        <p>Use the <strong>absolute path</strong> to <code>server/src/index.js</code>. After AURUM is published to npm, replace <code>"command": "node", "args": ["…/index.js"]</code> with <code>"command": "npx", "args": ["-y", "aurum-mcp"]</code>.</p>
+        <p>Use the <strong>absolute path</strong> to <code>server/src/index.js</code>. After Mandate is published to npm, replace <code>"command": "node", "args": ["…/index.js"]</code> with <code>"command": "npx", "args": ["-y", "mandate-mcp"]</code>.</p>
         <div class="tabs" data-tabs>
           <div class="tabs__head" role="tablist">
             <button role="tab" class="is-on" data-tab="desktop">Claude Desktop</button>
@@ -219,23 +219,23 @@ npm test</code></pre></div>
             <div class="code"><div class="code__bar"><em>claude_desktop_config.json</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
 <pre><code>{
   <span class="k">"mcpServers"</span>: {
-    <span class="k">"aurum"</span>: {
+    <span class="k">"mandate"</span>: {
       <span class="k">"command"</span>: <span class="s">"node"</span>,
-      <span class="k">"args"</span>: [<span class="s">"/absolute/path/aurum-mcp/server/src/index.js"</span>],
+      <span class="k">"args"</span>: [<span class="s">"/absolute/path/mandate-mcp/server/src/index.js"</span>],
       <span class="k">"env"</span>: {
-        <span class="k">"AURUM_DAILY_LIMIT_USD"</span>: <span class="s">"50"</span>,
-        <span class="k">"AURUM_ALLOWLIST"</span>: <span class="s">"uniswap,aave"</span>
+        <span class="k">"MANDATE_DAILY_LIMIT_USD"</span>: <span class="s">"50"</span>,
+        <span class="k">"MANDATE_ALLOWLIST"</span>: <span class="s">"uniswap,aave"</span>
       }
     }
   }
 }</code></pre></div>
-            <p>Restart the app. "aurum" with 9 tools appears in the tools menu.</p>
+            <p>Restart the app. "mandate" with 9 tools appears in the tools menu.</p>
           </div>
           <div class="tabs__panel" data-panel="code">
             <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
-<pre><code>claude mcp add aurum \
-  -e AURUM_DAILY_LIMIT_USD=50 \
-  -- node /absolute/path/aurum-mcp/server/src/index.js</code></pre></div>
+<pre><code>claude mcp add mandate \
+  -e MANDATE_DAILY_LIMIT_USD=50 \
+  -- node /absolute/path/mandate-mcp/server/src/index.js</code></pre></div>
             <p>Check with <code>claude mcp list</code>, or type <code>/mcp</code> inside a session.</p>
           </div>
           <div class="tabs__panel" data-panel="cursor">
@@ -243,7 +243,7 @@ npm test</code></pre></div>
             <div class="code"><div class="code__bar"><em>.cursor/mcp.json</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
 <pre><code>{
   <span class="k">"mcpServers"</span>: {
-    <span class="k">"aurum"</span>: { <span class="k">"command"</span>: <span class="s">"node"</span>, <span class="k">"args"</span>: [<span class="s">"/absolute/path/aurum-mcp/server/src/index.js"</span>] }
+    <span class="k">"mandate"</span>: { <span class="k">"command"</span>: <span class="s">"node"</span>, <span class="k">"args"</span>: [<span class="s">"/absolute/path/mandate-mcp/server/src/index.js"</span>] }
   }
 }</code></pre></div>
           </div>
@@ -301,7 +301,7 @@ npm test</code></pre></div>
 
         <article class="tool-doc" id="t-scan_token">
           <header><h3><code>scan_token</code></h3><span class="pill pill--ro">read-only</span><span class="pill">risk</span></header>
-          <p>Security scan of a token contract. AURUM fetches GoPlus Security data and turns it into a <strong>0–100 risk score</strong> (higher means riskier), a verdict and a list of flags. Agents should run it before buying any unfamiliar token.</p>
+          <p>Security scan of a token contract. Mandate fetches GoPlus Security data and turns it into a <strong>0–100 risk score</strong> (higher means riskier), a verdict and a list of flags. Agents should run it before buying any unfamiliar token.</p>
           <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
             <tbody><tr><td><code>address</code> <i>required</i></td><td>0x…</td><td>Token contract</td></tr><tr><td><code>chain</code></td><td>enum</td><td>Default <code>ethereum</code></td></tr></tbody></table>
           <table class="params params--score"><thead><tr><th>Check</th><th>Points</th></tr></thead><tbody>
@@ -324,7 +324,7 @@ npm test</code></pre></div>
 
         <article class="tool-doc" id="t-policy_check">
           <header><h3><code>policy_check</code></h3><span class="pill pill--ro">read-only</span><span class="pill pill--gold">policy</span></header>
-          <p>Asks the policy engine whether a proposed spend is allowed. If a recipient is given, AURUM checks its reputation automatically, and a flagged recipient is always denied. Agents <strong>must</strong> call this before moving funds and respect the answer.</p>
+          <p>Asks the policy engine whether a proposed spend is allowed. If a recipient is given, Mandate checks its reputation automatically, and a flagged recipient is always denied. Agents <strong>must</strong> call this before moving funds and respect the answer.</p>
           <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody>
             <tr><td><code>value_usd</code> <i>required</i></td><td>number ≥ 0</td><td>USD value of the spend</td></tr>
             <tr><td><code>recipient</code></td><td>0x…</td><td>Recipient address (reputation-checked)</td></tr>
@@ -335,7 +335,7 @@ npm test</code></pre></div>
 
         <article class="tool-doc" id="t-x402_quote">
           <header><h3><code>x402_quote</code></h3><span class="pill pill--ro">read-only</span><span class="pill">payments</span></header>
-          <p>Requests a URL. If the server answers <code>HTTP 402 Payment Required</code> using the x402 protocol, AURUM parses the payment options (scheme, network, asset, pay-to address, amount) and returns the policy decision for the cheapest one. <strong>It does not pay.</strong> Settlement is on the roadmap.</p>
+          <p>Requests a URL. If the server answers <code>HTTP 402 Payment Required</code> using the x402 protocol, Mandate parses the payment options (scheme, network, asset, pay-to address, amount) and returns the policy decision for the cheapest one. <strong>It does not pay.</strong> Settlement is on the roadmap.</p>
           <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code> <i>required</i></td><td>URL</td><td>Resource to quote</td></tr></tbody></table>
           <div class="code"><div class="code__bar"><em>response · paywalled resource</em></div><pre><code>{ <span class="k">"status"</span>: 402, <span class="k">"paywalled"</span>: true, <span class="k">"x402_version"</span>: 1,
   <span class="k">"options"</span>: [{ <span class="k">"scheme"</span>: <span class="s">"exact"</span>, <span class="k">"network"</span>: <span class="s">"base"</span>, <span class="k">"amount_usd"</span>: 0.02, <span class="k">"pay_to"</span>: <span class="s">"0x…"</span> }],
@@ -352,22 +352,22 @@ npm test</code></pre></div>
 
       <section id="resources" class="doc-sec">
         <h2>Resources</h2>
-        <p>Besides tools, AURUM exposes MCP <em>resources</em>: read-only documents a client can attach to the context.</p>
-        <table class="params"><thead><tr><th>URI</th><th>Type</th><th>Content</th></tr></thead><tbody><tr><td><code>aurum://policy</code></td><td>application/json</td><td>The active spending policy (limits, allow/deny lists)</td></tr></tbody></table>
+        <p>Besides tools, Mandate exposes MCP <em>resources</em>: read-only documents a client can attach to the context.</p>
+        <table class="params"><thead><tr><th>URI</th><th>Type</th><th>Content</th></tr></thead><tbody><tr><td><code>mandate://policy</code></td><td>application/json</td><td>The active spending policy (limits, allow/deny lists)</td></tr></tbody></table>
       </section>
 
       <section id="config" class="doc-sec">
         <h2>Configuration</h2>
         <p>All configuration lives in environment variables, set in your MCP client config. Defaults are deliberately conservative.</p>
         <table class="params"><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
-          <tr><td><code>AURUM_DAILY_LIMIT_USD</code></td><td>50</td><td>Total the agent may spend per UTC day</td></tr>
-          <tr><td><code>AURUM_PER_TX_LIMIT_USD</code></td><td>25</td><td>Above this, a human must approve</td></tr>
-          <tr><td><code>AURUM_HARD_CAP_USD</code></td><td>500</td><td>Above this, always denied, even with approval</td></tr>
-          <tr><td><code>AURUM_MICRO_ALLOWANCE_USD</code></td><td>1</td><td>Micro-payments at or below this pass automatically (within the daily limit)</td></tr>
-          <tr><td><code>AURUM_ALLOWLIST</code></td><td>(empty)</td><td>Comma-separated merchants. If set, anyone else above the micro allowance is denied</td></tr>
-          <tr><td><code>AURUM_DENYLIST</code></td><td>(empty)</td><td>Always denied</td></tr>
-          <tr><td><code>AURUM_REQUIRE_APPROVAL</code></td><td>true</td><td>Require approval for every non-micro spend</td></tr>
-          <tr><td><code>AURUM_LEDGER</code></td><td>~/.aurum-mcp/ledger.json</td><td>Where the daily spend ledger is stored</td></tr>
+          <tr><td><code>MANDATE_DAILY_LIMIT_USD</code></td><td>50</td><td>Total the agent may spend per UTC day</td></tr>
+          <tr><td><code>MANDATE_PER_TX_LIMIT_USD</code></td><td>25</td><td>Above this, a human must approve</td></tr>
+          <tr><td><code>MANDATE_HARD_CAP_USD</code></td><td>500</td><td>Above this, always denied, even with approval</td></tr>
+          <tr><td><code>MANDATE_MICRO_ALLOWANCE_USD</code></td><td>1</td><td>Micro-payments at or below this pass automatically (within the daily limit)</td></tr>
+          <tr><td><code>MANDATE_ALLOWLIST</code></td><td>(empty)</td><td>Comma-separated merchants. If set, anyone else above the micro allowance is denied</td></tr>
+          <tr><td><code>MANDATE_DENYLIST</code></td><td>(empty)</td><td>Always denied</td></tr>
+          <tr><td><code>MANDATE_REQUIRE_APPROVAL</code></td><td>true</td><td>Require approval for every non-micro spend</td></tr>
+          <tr><td><code>MANDATE_LEDGER</code></td><td>~/.mandate-mcp/ledger.json</td><td>Where the daily spend ledger is stored</td></tr>
         </tbody></table>
         <h3>Recommended profiles</h3>
         <div class="profiles">
@@ -379,7 +379,7 @@ npm test</code></pre></div>
 
       <section id="policy" class="doc-sec">
         <h2>Policy engine</h2>
-        <p>The policy engine is the core of AURUM. It is ~100 lines of plain, auditable code (<code>server/src/policy.js</code>) that turns a proposed spend into one of three decisions:</p>
+        <p>The policy engine is the core of Mandate. It is ~100 lines of plain, auditable code (<code>server/src/policy.js</code>) that turns a proposed spend into one of three decisions:</p>
         <div class="decisions">
           <div class="dec dec--allow"><b>allow</b><span>Within every limit. Typically an x402 micro-payment.</span></div>
           <div class="dec dec--ask"><b>needs_approval</b><span>Over a soft limit. A human must confirm.</span></div>
@@ -416,12 +416,12 @@ npm test</code></pre></div>
         </figure>
         <figure class="shot shot--tight">
           <img src="docs/img/policy-decisions.jpg" alt="Terminal showing three policy decisions: allow, needs approval and deny" loading="lazy" />
-          <figcaption>Real decisions from the test suite with <code>AURUM_DAILY_LIMIT_USD=50</code> and <code>AURUM_ALLOWLIST=uniswap</code>.</figcaption>
+          <figcaption>Real decisions from the test suite with <code>MANDATE_DAILY_LIMIT_USD=50</code> and <code>MANDATE_ALLOWLIST=uniswap</code>.</figcaption>
         </figure>
         <h3>Why it's injection-proof</h3>
         <p>Limits are read from environment variables when the process starts and enforced in code. The model can only <em>ask</em> for a decision through <code>policy_check</code>; no tool exists that changes the policy at runtime. A prompt-injected agent can request a $10,000 transfer, and the engine returns <code>deny</code>.</p>
         <h3>The ledger</h3>
-        <p>Approved spends are written to a JSON ledger (<code>~/.aurum-mcp/ledger.json</code>) that resets every UTC day. Restarting the server or the client doesn't reset the budget.</p>
+        <p>Approved spends are written to a JSON ledger (<code>~/.mandate-mcp/ledger.json</code>) that resets every UTC day. Restarting the server or the client doesn't reset the budget.</p>
       </section>
 
       <section id="x402" class="doc-sec">
@@ -430,7 +430,7 @@ npm test</code></pre></div>
         <figure class="diagram" aria-label="x402 sequence diagram">
           <svg viewBox="0 0 860 260" role="img">
             <g font-family="Inter, sans-serif" font-size="12.5" fill="#d6d6de">
-              <text x="120" y="24" text-anchor="middle" fill="#fff" font-weight="600">Agent + AURUM</text>
+              <text x="120" y="24" text-anchor="middle" fill="#fff" font-weight="600">Agent + Mandate</text>
               <text x="740" y="24" text-anchor="middle" fill="#fff" font-weight="600">Paid API</text>
               <path d="M120 36 V250" stroke="rgba(255,255,255,.2)" stroke-dasharray="3 5"/><path d="M740 36 V250" stroke="rgba(255,255,255,.2)" stroke-dasharray="3 5"/>
               <path d="M120 66 H732" stroke="#9fb4ff" marker-end="url(#arr)"/><text x="430" y="58" text-anchor="middle">1 · GET /v1/weather/dubai</text>
@@ -452,18 +452,38 @@ npm test</code></pre></div>
           <div><b>Drainer addresses</b><span>Recipients are reputation-checked inside <code>policy_check</code>. Flagged means deny.</span></div>
           <div><b>Bad input</b><span>JSON-schema validation rejects malformed addresses, unknown chains and negative amounts.</span></div>
           <div><b>Key exposure</b><span>v0.1 holds no keys at all. Future agent wallets use scoped session keys, never your main key.</span></div>
-          <div><b>Third-party data</b><span>Data sources can be wrong or down. AURUM reports errors explicitly and the agent should treat "unknown" as risky.</span></div>
+          <div><b>Third-party data</b><span>Data sources can be wrong or down. Mandate reports errors explicitly and the agent should treat "unknown" as risky.</span></div>
         </div>
-        <div class="callout callout--warn"><b>Disclaimer</b> AURUM reduces risk but cannot remove it. Risk scores come from third-party heuristics. This is not financial advice; you are responsible for funds your agents control.</div>
+        <div class="callout callout--warn"><b>Disclaimer</b> Mandate reduces risk but cannot remove it. Risk scores come from third-party heuristics. This is not financial advice; you are responsible for funds your agents control.</div>
+      </section>
+
+      <section id="equities" class="doc-sec">
+        <h2>Equity Rails <span class="fade">(phase 4 preview)</span></h2>
+        <p>Stocks are moving on-chain as <strong>tokenized equities</strong>: tokens that track a real share and trade 24/7 on Solana, Arbitrum, Base and other chains. Agents will want to manage them the same way they manage crypto. Equity Rails extends Mandate to stocks, using the same mandate engine and adding one equities-specific safety layer.</p>
+        <h3>Parity Guard</h3>
+        <p>A tokenized share should trade close to its underlying stock. When liquidity is thin or the market is closed, it can drift, and an agent buying at a 3% premium simply loses money. Before every buy, Parity Guard compares the on-chain price with the exchange reference price and blocks the trade when the premium is outside your band.</p>
+        <div class="code"><div class="code__bar"><em>parity_check · planned response</em></div><pre><code>{ <span class="k">"ticker"</span>: <span class="s">"AAPLx"</span>, <span class="k">"onchain_usd"</span>: 236.41, <span class="k">"reference_usd"</span>: 229.10, <span class="k">"premium_pct"</span>: 3.19,
+  <span class="k">"band_pct"</span>: 0.5, <span class="k">"market_open"</span>: true, <span class="k">"decision"</span>: <span class="s">"deny"</span>, <span class="k">"reason"</span>: <span class="s">"premium 3.19% exceeds 0.5% band"</span> }</code></pre></div>
+        <h3>Equity mandates</h3>
+        <table class="params"><thead><tr><th>Rule</th><th>Example</th><th>Why</th></tr></thead><tbody>
+          <tr><td><code>MANDATE_EQ_MAX_POSITION_PCT</code></td><td>10</td><td>No single ticker above 10% of the portfolio</td></tr>
+          <tr><td><code>MANDATE_EQ_SECTOR_CAP_PCT</code></td><td>30</td><td>Caps exposure to any one sector</td></tr>
+          <tr><td><code>MANDATE_EQ_PARITY_BAND_PCT</code></td><td>0.5</td><td>Max premium over the reference price</td></tr>
+          <tr><td><code>MANDATE_EQ_MARKET_HOURS_ONLY</code></td><td>true</td><td>Trade only while the underlying market is open</td></tr>
+          <tr><td><code>MANDATE_EQ_LEVERAGE</code></td><td>false</td><td>No margin, no leveraged tokens</td></tr>
+        </tbody></table>
+        <h3>Planned tools</h3>
+        <p><code>get_equity_quote</code> · <code>parity_check</code> · <code>market_hours</code> · <code>corporate_actions</code> · <code>equity_mandate</code> · <code>execute_equity</code>. Read-only tools ship first; execution comes after the wallet phase and an audit.</p>
+        <div class="callout callout--warn"><b>Note</b> Tokenized equities are regulated differently from country to country and may be unavailable where you live. Mandate will only route to venues you allowlist. Nothing here is investment advice.</div>
       </section>
 
       <section id="token" class="doc-sec">
-        <h2>AUR token <span class="fade">(concept)</span></h2>
-        <div class="callout"><b>Status</b> No token exists. This section describes the proposed design for the hosted gateway network. Beware of anyone selling "AUR" today.</div>
-        <figure class="shot shot--tight"><img src="docs/img/landing-token.jpg" alt="Token section of the landing page with the AUR coin" loading="lazy" /></figure>
+        <h2>MNDT token <span class="fade">(concept)</span></h2>
+        <div class="callout"><b>Status</b> No token exists. This section describes the proposed design for the hosted gateway network. Beware of anyone selling "MNDT" today.</div>
+        <figure class="shot shot--tight"><img src="docs/img/landing-token.jpg" alt="Token section of the landing page with the MNDT coin" loading="lazy" /></figure>
         <table class="params"><thead><tr><th>Asset</th><th>Role</th></tr></thead><tbody>
-          <tr><td><b>AUR</b></td><td>Pays for premium tools and data on the hosted gateway; operator staking; governance. 1% of every paid call is burned.</td></tr>
-          <tr><td><b>xAUR</b></td><td>Staked AUR. Gateway node operators earn a share of x402 fees routed through their node.</td></tr></tbody></table>
+          <tr><td><b>MNDT</b></td><td>Pays for premium tools and data on the hosted gateway; operator staking; governance. 1% of every paid call is burned.</td></tr>
+          <tr><td><b>sMNDT</b></td><td>Staked MNDT. Gateway node operators earn a share of x402 fees routed through their node.</td></tr></tbody></table>
         <p>Proposed allocation: 35% ecosystem &amp; agents · 20% node operator rewards · 18% core contributors (4-year vest) · 15% treasury · 12% liquidity &amp; launch.</p>
         <p>The open-source server will always work without any token.</p>
       </section>
@@ -474,9 +494,10 @@ npm test</code></pre></div>
           <li class="done"><em>Phase 1 · Q3 2026</em><b>Genesis</b>Market and wallet tools on 7 EVM chains, stdio transport, MIT license.</li>
           <li class="now"><em>Phase 2 · Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓, docs &amp; live playground ✓. Next: swap quotes and fork simulation, npm publish, MCP registries.</li>
           <li><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>ERC-4337 agent wallets with session keys, x402 settlement, Telegram approvals, HTTP transport, security audit #1.</li>
-          <li><em>Phase 4 · Q2 2027</em><b>Token generation</b>Audit #2, AUR TGE on Base (fair launch), DEX liquidity on Uniswap v4 &amp; Aerodrome with LP locked 12 months, CoinGecko / CoinMarketCap applications, xAUR staking.</li>
-          <li><em>Phase 5 · Q3 2027</em><b>Gateway network</b>Hosted gateway and node operators, x402 fee share, Solana support, tier-2 exchange listings.</li>
-          <li><em>Phase 6 · Q4 2027 →</em><b>Agent economy</b>Agent-to-agent marketplace, tier-1 exchange listings, multi-language SDKs, on-chain governance.</li>
+          <li><em>Phase 4 · Q1–Q2 2027</em><b>Equity Rails</b>Tokenized stock quotes, Parity Guard, market-hours and corporate-action awareness, equity mandates, read-only brokerage sync. See <a href="#equities">Equity Rails</a>.</li>
+          <li><em>Phase 5 · Q2 2027</em><b>Token generation</b>Audit #2, MNDT TGE on Base (fair launch), DEX liquidity on Uniswap v4 &amp; Aerodrome with LP locked 12 months, CoinGecko / CoinMarketCap applications, sMNDT staking.</li>
+          <li><em>Phase 6 · Q3 2027</em><b>Gateway network</b>Hosted gateway and node operators, x402 fee share, Solana support, tier-2 exchange listings.</li>
+          <li><em>Phase 7 · Q4 2027 →</em><b>Agent economy</b>Agent-to-agent marketplace, tier-1 exchange listings, multi-language SDKs, on-chain governance.</li>
         </ul>
       </section>
 
@@ -485,14 +506,14 @@ npm test</code></pre></div>
         <details><summary>Do I need an API key or wallet?</summary><p>No. All current tools use free public endpoints and are read-only.</p></details>
         <details><summary>Can my agent actually move money today?</summary><p>Not yet, and that is deliberate. v0.1 provides market intelligence, risk checks and policy decisions. Execution (agent wallets, swaps, x402 settlement) ships next, on top of the same policy engine.</p></details>
         <details><summary>Which AI models work with it?</summary><p>Any model behind an MCP-capable client: Claude (Desktop, Code), Cursor, Windsurf, Zed, Cline, the OpenAI Agents SDK, or your own agent built on the MCP SDK.</p></details>
-        <details><summary>Is my data sent anywhere?</summary><p>Only the queries a tool needs: token ids to CoinGecko, addresses to the RPC and GoPlus. AURUM has no telemetry.</p></details>
+        <details><summary>Is my data sent anywhere?</summary><p>Only the queries a tool needs: token ids to CoinGecko, addresses to the RPC and GoPlus. Mandate has no telemetry.</p></details>
         <details><summary>What happens when a data source is down?</summary><p>The tool returns <code>isError: true</code> with the reason. Requests time out after 12 seconds, so the agent is never left hanging.</p></details>
-        <details><summary>How is this different from giving the agent an exchange API key?</summary><p>An exchange key lets the model do anything the key allows. AURUM's policy engine sits in between with limits, allowlists and approvals that the model cannot change.</p></details>
+        <details><summary>How is this different from giving the agent an exchange API key?</summary><p>An exchange key lets the model do anything the key allows. Mandate's policy engine sits in between with limits, allowlists and approvals that the model cannot change.</p></details>
       </section>
 
       <section id="contributing" class="doc-sec">
         <h2>Contributing</h2>
-        <p>AURUM is MIT-licensed and contributions are welcome. A new tool is about 20 lines: register it in <code>server/src/index.js</code> with a zod schema and a handler, put data access in <code>data.js</code>, and add a call to <code>test/smoke.js</code>.</p>
+        <p>Mandate is MIT-licensed and contributions are welcome. A new tool is about 20 lines: register it in <code>server/src/index.js</code> with a zod schema and a handler, put data access in <code>data.js</code>, and add a call to <code>test/smoke.js</code>.</p>
         <div class="code"><div class="code__bar"><em>server/src/index.js</em></div>
 <pre><code>server.registerTool(<span class="s">'my_tool'</span>, {
   title: <span class="s">'My tool'</span>,
