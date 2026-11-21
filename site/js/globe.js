@@ -50,12 +50,21 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
   group.rotation.y = 0.6;
 
   /* ---------- core + atmosphere ---------- */
-  const core = new THREE.Mesh(new THREE.SphereGeometry(R * 0.995, 96, 96), new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color('#05060f') }, uRim: { value: new THREE.Color('#7f9bff') } },
+  // light comes from the upper-left (view space) so the sphere reads as a lit 3D body
+  const LIGHT = new THREE.Vector3(-0.55, 0.5, 0.67).normalize();
+  const core = new THREE.Mesh(new THREE.SphereGeometry(R * 0.995, 128, 128), new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color('#04050d') }, uLit: { value: new THREE.Color('#1b2a6b') }, uRim: { value: new THREE.Color('#7f9bff') }, uLight: { value: LIGHT } },
     vertexShader: `varying vec3 vN; varying vec3 vV;
       void main(){ vec4 mv = modelViewMatrix * vec4(position,1.); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
-    fragmentShader: `uniform vec3 uColor; uniform vec3 uRim; varying vec3 vN; varying vec3 vV;
-      void main(){ float f = pow(1. - max(dot(vN, vV), 0.), 3.2); vec3 c = mix(uColor, uRim, f*0.9) + vec3(1.)*pow(f,7.)*0.9; gl_FragColor = vec4(c,1.); }`,
+    fragmentShader: `uniform vec3 uColor; uniform vec3 uLit; uniform vec3 uRim; uniform vec3 uLight; varying vec3 vN; varying vec3 vV;
+      void main(){
+        float diff = max(dot(vN, uLight), 0.);
+        float spec = pow(max(dot(reflect(-uLight, vN), vV), 0.), 24.) * 0.35;
+        float f = pow(1. - max(dot(vN, vV), 0.), 3.2);
+        vec3 c = uColor + uLit * pow(diff, 1.4) * 0.9 + vec3(0.6,0.7,1.) * spec;
+        c = mix(c, uRim, f * (0.35 + 0.65 * smoothstep(-0.3, 0.6, dot(vN, uLight) + 0.4)));
+        c += vec3(1.) * pow(f, 7.) * 0.8;
+        gl_FragColor = vec4(c, 1.); }`,
   }));
   group.add(core);
 
@@ -67,7 +76,7 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
   scene.add(atmo);
 
   /* ---------- land dots ---------- */
-  const dotUniforms = { uTime: { value: 0 }, uSize: { value: 2.6 * DPR } };
+  const dotUniforms = { uTime: { value: 0 }, uSize: { value: 2.7 * DPR }, uLight: { value: LIGHT } };
   const img = new Image();
   img.src = 'assets/earth-water.png';
   img.onload = () => {
@@ -98,15 +107,17 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
     geo.setAttribute('aRnd', new THREE.Float32BufferAttribute(rnd, 1));
     group.add(new THREE.Points(geo, new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, uniforms: dotUniforms,
-      vertexShader: `attribute float aRnd; uniform float uTime; uniform float uSize; varying float vA; varying float vR;
-        void main(){ vec4 mv = modelViewMatrix*vec4(position,1.); vec3 n = normalize(normalMatrix*normalize(position));
-          vA = smoothstep(-0.05, 0.45, dot(n, normalize(-mv.xyz))); vR = aRnd;
-          float tw = 0.75 + 0.25*sin(uTime*1.5 + aRnd*40.);
-          gl_PointSize = uSize * tw * (8.5 / -mv.z); gl_Position = projectionMatrix*mv; }`,
-      fragmentShader: `varying float vA; varying float vR;
+      vertexShader: `attribute float aRnd; uniform float uTime; uniform float uSize; uniform vec3 uLight; varying float vA; varying float vR; varying float vL;
+        void main(){ vec4 mv = modelViewMatrix*vec4(position * 1.004,1.); vec3 n = normalize(normalMatrix*normalize(position));
+          float facing = dot(n, normalize(-mv.xyz));
+          vA = smoothstep(-0.05, 0.45, facing); vR = aRnd;
+          vL = 0.45 + 0.75 * max(dot(n, uLight), 0.);          // lit side brighter, night side dimmer
+          float tw = 0.8 + 0.2*sin(uTime*1.5 + aRnd*40.);
+          gl_PointSize = uSize * tw * (0.6 + 0.4 * facing) * (8.5 / -mv.z); gl_Position = projectionMatrix*mv; }`,
+      fragmentShader: `varying float vA; varying float vR; varying float vL;
         void main(){ float d = length(gl_PointCoord-.5); if(d>.5) discard;
           vec3 col = mix(vec3(0.82,0.88,1.0), vec3(1.0,0.86,0.55), step(0.975, vR));
-          gl_FragColor = vec4(col * 1.25, smoothstep(.5,.2,d) * vA); }`,
+          gl_FragColor = vec4(col * 1.3 * vL, smoothstep(.5,.2,d) * vA); }`,
     })));
   };
 
@@ -121,7 +132,7 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
     const spikeH = 0.16 + (n.agents / 3105) * 0.22;
     const spike = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.012, spikeH, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.85, depthWrite: false }));
     spike.position.y = spikeH / 2;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfff0c8 }));
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfff0c8 }));
     head.position.y = spikeH;
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0xffc860, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
     halo.scale.setScalar(0.22); halo.position.y = spikeH;
@@ -159,10 +170,30 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
     return { a, b, mat };
   });
 
+  /* ---------- orbit rings + satellites (pass in front of / behind the planet → reads as 3D) ---------- */
+  const orbitGroup = new THREE.Group();
+  orbitGroup.rotation.set(1.18, 0, -0.32);
+  scene.add(orbitGroup);
+  const ORB = R * 1.26;
+  const orbitRing = new THREE.Mesh(new THREE.TorusGeometry(ORB, 0.0045, 8, 256), new THREE.MeshBasicMaterial({ color: 0xe7b94f, transparent: true, opacity: 0.45, depthWrite: false }));
+  orbitGroup.add(orbitRing);
+  const orbit2 = new THREE.Group();
+  orbit2.rotation.set(1.5, 0.5, 0.6);
+  scene.add(orbit2);
+  orbit2.add(new THREE.Mesh(new THREE.TorusGeometry(R * 1.18, 0.003, 8, 256), new THREE.MeshBasicMaterial({ color: 0x9fb4ff, transparent: true, opacity: 0.22, depthWrite: false })));
+  const sats = [0, 2.1, 4.2].map((phase, k) => {
+    const s = new THREE.Group();
+    s.add(new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfff0c8 })));
+    const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0xffc860, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    h.scale.setScalar(0.32); s.add(h);
+    (k === 2 ? orbit2 : orbitGroup).add(s);
+    return { s, phase, r: k === 2 ? R * 1.18 : ORB, speed: k === 2 ? -0.35 : 0.28 };
+  });
+
   /* ---------- sizing ---------- */
   stage.onResize = (w, h) => {
     const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const fit = R * 2.55;
+    const fit = R * 2.6;
     camera.position.z = Math.max(fit / (2 * tan), fit / (2 * tan * (w / h)));
   };
   stage.onResize(canvas.clientWidth, canvas.clientHeight);
@@ -192,7 +223,7 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
   };
 
   canvas.addEventListener('pointerdown', (e) => {
-    dragging = true; lastX = e.clientX; lastY = e.clientY; velY = 0; velX = 0;
+    dragging = true; fly = null; lastX = e.clientX; lastY = e.clientY; velY = 0; velX = 0;
     canvas.setPointerCapture?.(e.pointerId);
     lastUser = performance.now();
   });
@@ -208,24 +239,41 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
       lastUser = performance.now();
     }
   });
+  // fly-to: rotate the planet so node i faces the camera, centred vertically
+  const TAU = Math.PI * 2, TILT_X = tilt.rotation.x;
+  let fly = null, holdUntil = 0;
+  const chips = [...document.querySelectorAll('[data-node]')];
+  const focus = (i, byUser) => {
+    const p = nodeObjs[i].g.position;
+    const cur = group.rotation.y;
+    let ty = -Math.atan2(p.x, p.z);
+    ty = cur + ((((ty - cur) % TAU) + TAU + Math.PI) % TAU - Math.PI);   // shortest way round
+    const tp = THREE.MathUtils.clamp(Math.atan2(p.y, Math.hypot(p.x, p.z)) - TILT_X, -0.7, 0.7);
+    fly = { y: ty, p: tp };
+    selected = i;
+    holdUntil = performance.now() + (byUser ? 7000 : 3600);
+    chips.forEach((c) => c.classList.toggle('is-on', +c.dataset.node === i));
+  };
+  chips.forEach((c) => c.addEventListener('click', () => { lastUser = performance.now(); focus(+c.dataset.node, true); }));
+
   const endDrag = (e) => {
     if (!dragging) return;
     dragging = false; canvas.classList.remove('is-grabbing');
     setNDC(e);
     const i = pick();
-    if (i >= 0 && Math.abs(velY) < 0.02) { selected = i; lastUser = performance.now(); }
+    if (i >= 0 && Math.abs(velY) < 0.02) { lastUser = performance.now(); focus(i, true); }
   };
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', () => { dragging = false; canvas.classList.remove('is-grabbing'); });
   canvas.addEventListener('pointerleave', () => { ndc.set(9, 9); });
 
-  // auto-tour: highlight a visible node every few seconds while the user is idle
-  let tourAt = 0;
+  // auto-tour: while the user is idle, fly to a node every few seconds
+  let tourAt = performance.now() + 2600;
   const autoSelect = (now) => {
-    if (now - lastUser < 7000 || now < tourAt) return;
-    tourAt = now + 3800;
-    const candidates = nodeObjs.map((o, i) => [i, facing(o)]).filter(([i, f]) => f > 0.45 && i !== selected);
-    if (candidates.length) selected = candidates[Math.floor(Math.random() * candidates.length)][0];
+    if (now - lastUser < 9000 || now < tourAt) return;
+    tourAt = now + 5600;
+    let i; do { i = Math.floor(Math.random() * nodeObjs.length); } while (i === selected);
+    focus(i, false);
   };
 
   const tmp = new THREE.Vector3();
@@ -276,13 +324,22 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
     const cur = dragging ? 'grabbing' : hovered >= 0 ? 'pointer' : 'grab';
     if (cur !== lastCursor) { lastCursor = cur; canvas.style.cursor = cur; }
 
-    if (!dragging && !reduced) {
-      velY *= 0.94; velX *= 0.9;
-      const auto = hovered >= 0 ? 0.015 : 0.13;      // steady rotation, slows on hover
+    const holding = now < holdUntil;
+    if (fly && !dragging) {
+      const k = Math.min(1, dt * 3.2);
+      group.rotation.y += (fly.y - group.rotation.y) * k;
+      pitch += (fly.p - pitch) * k;
+      if (Math.abs(fly.y - group.rotation.y) < 0.003 && Math.abs(fly.p - pitch) < 0.003) fly = null;
+    } else if (!dragging) {
+      velY *= 0.94;
+      // always spinning like a globe; slows down while a node is hovered / just selected
+      const auto = hovered >= 0 || holding ? 0.02 : reduced ? 0.08 : 0.24;
       group.rotation.y += velY + dt * (auto + (1 - e) * 1.2) + spin;
-      pitch *= 0.985;                                  // drift back to the default tilt
+      if (!holding) pitch *= 0.99;                       // drift back to the default tilt
     }
     group.rotation.x = pitch;
+    orbitGroup.rotation.y = t * 0.05;
+    sats.forEach((s) => { const a = s.phase + t * s.speed; s.s.position.set(Math.cos(a) * s.r, Math.sin(a) * s.r, 0); });
 
     if (!dragging) autoSelect(now);
     const active = hovered >= 0 ? hovered : selected;
@@ -291,7 +348,7 @@ export function initGlobe(canvas, makeStage, { reduced, isMobile, DPR }) {
       o.hover += (target - o.hover) * Math.min(1, dt * 10);
       const k = 1 + o.hover * 0.9;
       o.head.scale.setScalar(k);
-      o.halo.scale.setScalar(0.22 * k * (1 + 0.15 * Math.sin(t * 3 + o.seed * 9)));
+      o.halo.scale.setScalar(0.3 * k *(1 + 0.15 * Math.sin(t * 3 + o.seed * 9)));
       const p = (t * 0.55 + o.seed) % 1;
       o.ring.scale.setScalar(1 + p * (3 + o.hover * 3));
       o.ring.material.opacity = (1 - p) * (0.75 + o.hover * 0.25);

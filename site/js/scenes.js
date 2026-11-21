@@ -50,7 +50,8 @@ function loop() {
   pointer.sy += (pointer.y - pointer.sy) * 0.05;
   for (const s of scenes) {
     if (!s.visible) continue;
-    s.update?.(reduced ? 0 : t, dt);
+    // gentle ambient motion is kept even with reduced-motion; only big intro/tour effects are dropped
+    s.update?.(t, dt);
     s.renderer.render(s.scene, s.camera);
   }
   requestAnimationFrame(loop);

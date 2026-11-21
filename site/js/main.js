@@ -365,10 +365,29 @@ const termIO = new IntersectionObserver((e) => {
 termIO.observe($('#termBody'));
 
 /* ---------- roadmap progress ---------- */
-const rp = new IntersectionObserver((e) => {
-  if (e[0].isIntersecting) { $('#roadProgress').style.width = '37%'; rp.disconnect(); }
-}, { threshold: 0.4 });
-rp.observe($('.roadmap'));
+// ascent rail fills with scroll; the orb rides the tip
+(() => {
+  const asc = $('#ascent'), fill = $('#ascentFill'), orb = $('#ascentOrb');
+  if (!asc) return;
+  const stages = $$('.stage', asc);
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const r = asc.getBoundingClientRect();
+    const p = Math.max(0, Math.min(1, (innerHeight * 0.55 - r.top) / r.height));
+    fill.style.transform = `scaleY(${p})`;
+    orb.style.transform = `translate(-50%, ${p * r.height}px)`;
+    stages.forEach((s) => {
+      const sr = s.getBoundingClientRect();
+      s.classList.toggle('is-passed', sr.top + 40 < innerHeight * 0.55);
+    });
+  };
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  addEventListener('resize', update);
+  update();
+  const lad = $('#ladder');
+  new IntersectionObserver((e, o) => { if (e[0].isIntersecting) { lad.classList.add('is-in'); o.disconnect(); } }, { threshold: 0.3 }).observe(lad);
+})();
 
 /* ---------- subscribe ---------- */
 $('#subscribe').addEventListener('submit', (e) => {
