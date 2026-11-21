@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AURUM Docs | MCP server for the agent economy</title>
+  <meta name="description" content="Documentation for AURUM MCP: what it is, how it works, quick start, tool reference, policy engine, x402 payments, security model and roadmap." />
+  <meta name="theme-color" content="#06060a" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs-body">
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="nav is-scrolled" id="nav">
+    <div class="container container--wide nav__inner">
+      <a href="index.html" class="logo" aria-label="AURUM home">
+        <svg class="logo__mark" viewBox="0 0 40 40" aria-hidden="true">
+          <defs>
+            <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e7b94f"/><stop offset="1" stop-color="#7a4e12"/></linearGradient>
+            <linearGradient id="lg2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d77a"/><stop offset="1" stop-color="#5a380b"/></linearGradient>
+          </defs>
+          <path d="M20 3 L35 34 L20 27 Z" fill="url(#lg2)"/><path d="M20 3 L5 34 L20 27 Z" fill="url(#lg1)"/><path d="M5 34 L20 27 L35 34 L20 37 Z" fill="#8a5a17"/>
+        </svg>
+        <span>AURUM</span><em class="docs-badge">Docs</em>
+      </a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="index.html#tools">Tools</a>
+        <a href="docs.html" class="is-active">Docs</a>
+        <a href="index.html#roadmap">Roadmap</a>
+      </nav>
+      <div class="nav__cta">
+        <a href="https://github.com/" class="nav__gh" aria-label="GitHub" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg></a>
+        <a href="#quickstart" class="btn btn--gold btn--sm">Quick start</a>
+        <button class="docs-menu-btn" id="docsMenuBtn" aria-label="Open docs navigation" aria-expanded="false">☰ Contents</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="docs container container--wide">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="docs-side" id="docsSide">
+      <label class="docs-search"><span>⌕</span><input id="docsSearch" type="search" placeholder="Search docs…" aria-label="Search docs" /><kbd>/</kbd></label>
+      <nav aria-label="Docs">
+        <p class="docs-side__group">Getting started</p>
+        <a href="#overview">Overview</a>
+        <a href="#why">Why AURUM exists</a>
+        <a href="#how">How it works</a>
+        <a href="#quickstart">Quick start</a>
+        <a href="#clients">Client setup</a>
+        <p class="docs-side__group">Reference</p>
+        <a href="#tools">Tool reference</a>
+        <a href="#t-get_price" class="sub">get_price</a>
+        <a href="#t-trending_tokens" class="sub">trending_tokens</a>
+        <a href="#t-get_gas" class="sub">get_gas</a>
+        <a href="#t-get_balance" class="sub">get_balance</a>
+        <a href="#t-scan_token" class="sub">scan_token</a>
+        <a href="#t-check_address" class="sub">check_address</a>
+        <a href="#t-policy_check" class="sub">policy_check</a>
+        <a href="#t-x402_quote" class="sub">x402_quote</a>
+        <a href="#t-spending_report" class="sub">spending_report</a>
+        <a href="#resources">Resources</a>
+        <a href="#config">Configuration</a>
+        <p class="docs-side__group">Concepts</p>
+        <a href="#policy">Policy engine</a>
+        <a href="#x402">x402 payments</a>
+        <a href="#security">Security model</a>
+        <a href="#token">AUR token (concept)</a>
+        <p class="docs-side__group">Project</p>
+        <a href="#roadmap">Roadmap</a>
+        <a href="#faq">FAQ</a>
+        <a href="#contributing">Contributing</a>
+      </nav>
+    </aside>
+
+    <!-- ================= CONTENT ================= -->
+    <main class="docs-main" id="docsMain">
+
+      <section id="overview" class="doc-sec">
+        <p class="label">[ Documentation · v0.1 ]</p>
+        <h1 class="docs-h1">AURUM <span class="fade">MCP</span></h1>
+        <p class="lead">AURUM is an open-source <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> server that gives AI agents safe, policy-guarded access to on-chain value. Plug it into Claude, Cursor or any MCP client, and your agent can read markets, check wallets, scan tokens for scams and price x402 payments. Every spend goes through a policy engine that you configure, and nothing the agent says can change it.</p>
+        <div class="doc-cards">
+          <a href="#quickstart" class="doc-card"><b>Quick start →</b><span>Install and connect your agent in under a minute.</span></a>
+          <a href="#tools" class="doc-card"><b>Tool reference →</b><span>All 9 tools with parameters and real responses.</span></a>
+          <a href="#policy" class="doc-card"><b>Policy engine →</b><span>How allow / approve / deny decisions are made.</span></a>
+        </div>
+        <figure class="shot">
+          <img src="docs/img/landing-hero.jpg" alt="AURUM landing page hero with an interactive 3D globe showing agent gateway nodes" loading="lazy" width="1440" height="900" />
+          <figcaption>The AURUM landing page. Gold nodes on the globe are gateway regions; arcs are agent-to-agent transactions.</figcaption>
+        </figure>
+        <h3>At a glance</h3>
+        <div class="kv">
+          <div><em>What</em><span>MCP server (Node.js, ESM, zero build step)</span></div>
+          <div><em>For</em><span>AI agents that need market data, wallet reads, risk checks and spend control</span></div>
+          <div><em>Tools</em><span>9 live today: market, wallets, risk, payments, policy</span></div>
+          <div><em>Chains</em><span>Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche</span></div>
+          <div><em>Data</em><span>CoinGecko · PublicNode RPC · GoPlus Security. Free, no API keys</span></div>
+          <div><em>License</em><span>MIT</span></div>
+        </div>
+      </section>
+
+      <section id="why" class="doc-sec">
+        <h2>Why AURUM exists</h2>
+        <p>AI agents are turning into economic actors. They call paid APIs, buy data, and soon will trade and pay each other. To do that they need money, and today the usual answer is to hand the model a private key or an exchange API key.</p>
+        <p>That is dangerous. An LLM can be <strong>prompt-injected</strong>: a malicious web page, token name or email can tell it to "send everything to 0x…". With a raw key, nothing stops it.</p>
+        <p>AURUM splits <em>capability</em> from <em>authority</em>. The agent gets rich, typed tools to understand the market. Authority to spend stays in a policy engine on your machine, configured by you and enforced in code.</p>
+        <div class="compare">
+          <div class="compare__col compare__col--bad">
+            <h4>Raw private key in the agent</h4>
+            <ul><li>Any prompt injection can drain funds</li><li>No spending limits</li><li>No idea whether a token is a scam</li><li>No audit trail</li><li>Each agent re-implements web3 plumbing</li></ul>
+          </div>
+          <div class="compare__col compare__col--good">
+            <h4>Agent + AURUM MCP</h4>
+            <ul><li>Limits enforced server-side, so prompts can't change them</li><li>Daily, per-transaction and hard caps</li><li>Risk scan before every buy</li><li>Persistent spend ledger</li><li>One server works with any MCP client</li></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="how" class="doc-sec">
+        <h2>How it works</h2>
+        <p>AURUM runs as a local process next to your MCP client and talks to it over <code>stdio</code>. The client (Claude Desktop, Cursor, Claude Code and others) lists AURUM's tools to the model. When the model decides to call one, the request flows through AURUM to public data sources, and every spend passes through the policy engine first.</p>
+        <figure class="diagram" aria-label="Architecture diagram">
+          <svg viewBox="0 0 860 380" role="img">
+            <defs>
+              <linearGradient id="gGold" x1="0" x2="1"><stop offset="0" stop-color="#fbe7a1"/><stop offset="1" stop-color="#c48a28"/></linearGradient>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#e7b94f"/></marker>
+            </defs>
+            <g font-family="Inter, sans-serif" font-size="13" fill="#d6d6de">
+              <rect x="20" y="140" width="170" height="100" rx="8" fill="#0d0d15" stroke="rgba(255,255,255,.15)"/>
+              <text x="105" y="178" text-anchor="middle" font-weight="600" fill="#fff">AI agent</text>
+              <text x="105" y="200" text-anchor="middle" fill="#8a8a99" font-size="12">Claude · Cursor · any</text>
+              <text x="105" y="216" text-anchor="middle" fill="#8a8a99" font-size="12">MCP client</text>
+
+              <rect x="270" y="60" width="300" height="260" rx="10" fill="#120f09" stroke="url(#gGold)" stroke-width="1.5"/>
+              <text x="420" y="92" text-anchor="middle" font-weight="600" fill="#fbe7a1" font-size="15">AURUM MCP server</text>
+              <rect x="295" y="112" width="250" height="52" rx="6" fill="#0a0a10" stroke="rgba(255,255,255,.12)"/>
+              <text x="420" y="134" text-anchor="middle" fill="#fff" font-weight="500">Typed tools</text>
+              <text x="420" y="152" text-anchor="middle" fill="#8a8a99" font-size="11.5">market · wallets · risk · x402</text>
+              <rect x="295" y="178" width="250" height="52" rx="6" fill="#0a0a10" stroke="#e7b94f"/>
+              <text x="420" y="200" text-anchor="middle" fill="#fbe7a1" font-weight="600">Policy engine</text>
+              <text x="420" y="218" text-anchor="middle" fill="#8a8a99" font-size="11.5">allow · needs_approval · deny</text>
+              <rect x="295" y="244" width="250" height="52" rx="6" fill="#0a0a10" stroke="rgba(255,255,255,.12)"/>
+              <text x="420" y="266" text-anchor="middle" fill="#fff" font-weight="500">Spend ledger</text>
+              <text x="420" y="284" text-anchor="middle" fill="#8a8a99" font-size="11.5">~/.aurum-mcp/ledger.json</text>
+
+              <rect x="650" y="40" width="190" height="62" rx="8" fill="#0d0d15" stroke="rgba(255,255,255,.15)"/>
+              <text x="745" y="66" text-anchor="middle" fill="#fff" font-weight="500">CoinGecko</text>
+              <text x="745" y="84" text-anchor="middle" fill="#8a8a99" font-size="11.5">prices · trending</text>
+              <rect x="650" y="118" width="190" height="62" rx="8" fill="#0d0d15" stroke="rgba(255,255,255,.15)"/>
+              <text x="745" y="144" text-anchor="middle" fill="#fff" font-weight="500">EVM RPC (7 chains)</text>
+              <text x="745" y="162" text-anchor="middle" fill="#8a8a99" font-size="11.5">balances · gas</text>
+              <rect x="650" y="196" width="190" height="62" rx="8" fill="#0d0d15" stroke="rgba(255,255,255,.15)"/>
+              <text x="745" y="222" text-anchor="middle" fill="#fff" font-weight="500">GoPlus Security</text>
+              <text x="745" y="240" text-anchor="middle" fill="#8a8a99" font-size="11.5">token &amp; address risk</text>
+              <rect x="650" y="274" width="190" height="62" rx="8" fill="#0d0d15" stroke="rgba(255,255,255,.15)"/>
+              <text x="745" y="300" text-anchor="middle" fill="#fff" font-weight="500">x402 merchants</text>
+              <text x="745" y="318" text-anchor="middle" fill="#8a8a99" font-size="11.5">HTTP 402 paywalls</text>
+
+              <path d="M190 175 H262" stroke="#e7b94f" stroke-width="1.5" marker-end="url(#arr)"/>
+              <path d="M270 205 H198" stroke="#e7b94f" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+              <text x="230" y="166" text-anchor="middle" fill="#8a8a99" font-size="11">call</text>
+              <text x="230" y="224" text-anchor="middle" fill="#8a8a99" font-size="11">result</text>
+              <path d="M570 110 C610 110 610 71 642 71" stroke="rgba(255,255,255,.3)" fill="none" marker-end="url(#arr)"/>
+              <path d="M570 140 C610 140 610 149 642 149" stroke="rgba(255,255,255,.3)" fill="none" marker-end="url(#arr)"/>
+              <path d="M570 190 C610 190 610 227 642 227" stroke="rgba(255,255,255,.3)" fill="none" marker-end="url(#arr)"/>
+              <path d="M570 240 C610 240 610 305 642 305" stroke="rgba(255,255,255,.3)" fill="none" marker-end="url(#arr)"/>
+              <text x="420" y="350" text-anchor="middle" fill="#5d5d6b" font-size="11.5">runs locally · your keys never leave your machine</text>
+            </g>
+          </svg>
+          <figcaption>Request flow: agent → MCP client → AURUM → data sources. Spends are always evaluated by the policy engine before any action.</figcaption>
+        </figure>
+        <ol class="steps">
+          <li><b>Discover.</b> On start, the client asks AURUM for its tool list. Each tool has a name, description and JSON schema, so the model knows when and how to call it.</li>
+          <li><b>Call.</b> The model calls a tool with arguments. AURUM validates them (bad addresses, unknown chains and negative amounts are rejected before anything runs).</li>
+          <li><b>Guard.</b> For anything involving money, AURUM evaluates the policy and returns a decision with human-readable reasons.</li>
+          <li><b>Answer.</b> Results come back as structured JSON. The model turns them into a plain-language answer for you.</li>
+        </ol>
+      </section>
+
+      <section id="quickstart" class="doc-sec">
+        <h2>Quick start</h2>
+        <p>Requirements: <strong>Node.js 18.17+</strong> and git. No API keys and no wallet needed: every tool available today is read-only.</p>
+        <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
+<pre><code><span class="c"># 1. get the code</span>
+git clone https://github.com/&lt;you&gt;/aurum-mcp
+cd aurum-mcp/server
+
+<span class="c"># 2. install (two dependencies: MCP SDK + zod)</span>
+npm install
+
+<span class="c"># 3. verify: spawns the server and calls every tool against live data</span>
+npm test</code></pre></div>
+        <p>You should see all nine tools respond, ending with <code>all calls completed</code>:</p>
+        <figure class="shot shot--tight">
+          <img src="docs/img/npm-test.jpg" alt="Terminal output of npm test showing live prices, gas, balances and a token risk scan" loading="lazy" />
+          <figcaption>Real output of <code>npm test</code>: live ETH/TAO/BTC prices, Base gas, a wallet balance, a USDC risk scan, and input validation rejecting a bad address.</figcaption>
+        </figure>
+        <div class="callout"><b>Tip</b> To explore tools interactively, run <code>npm run inspect</code>. It opens the official MCP Inspector in your browser.</div>
+      </section>
+
+      <section id="clients" class="doc-sec">
+        <h2>Client setup</h2>
+        <p>Use the <strong>absolute path</strong> to <code>server/src/index.js</code>. After AURUM is published to npm, replace <code>"command": "node", "args": ["…/index.js"]</code> with <code>"command": "npx", "args": ["-y", "aurum-mcp"]</code>.</p>
+        <div class="tabs" data-tabs>
+          <div class="tabs__head" role="tablist">
+            <button role="tab" class="is-on" data-tab="desktop">Claude Desktop</button>
+            <button role="tab" data-tab="code">Claude Code</button>
+            <button role="tab" data-tab="cursor">Cursor</button>
+            <button role="tab" data-tab="other">Other clients</button>
+          </div>
+          <div class="tabs__panel is-on" data-panel="desktop">
+            <p>Settings → Developer → Edit Config, then add:</p>
+            <div class="code"><div class="code__bar"><em>claude_desktop_config.json</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
+<pre><code>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"aurum"</span>: {
+      <span class="k">"command"</span>: <span class="s">"node"</span>,
+      <span class="k">"args"</span>: [<span class="s">"/absolute/path/aurum-mcp/server/src/index.js"</span>],
+      <span class="k">"env"</span>: {
+        <span class="k">"AURUM_DAILY_LIMIT_USD"</span>: <span class="s">"50"</span>,
+        <span class="k">"AURUM_ALLOWLIST"</span>: <span class="s">"uniswap,aave"</span>
+      }
+    }
+  }
+}</code></pre></div>
+            <p>Restart the app. "aurum" with 9 tools appears in the tools menu.</p>
+          </div>
+          <div class="tabs__panel" data-panel="code">
+            <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
+<pre><code>claude mcp add aurum \
+  -e AURUM_DAILY_LIMIT_USD=50 \
+  -- node /absolute/path/aurum-mcp/server/src/index.js</code></pre></div>
+            <p>Check with <code>claude mcp list</code>, or type <code>/mcp</code> inside a session.</p>
+          </div>
+          <div class="tabs__panel" data-panel="cursor">
+            <p>Create <code>.cursor/mcp.json</code> in your project (or <code>~/.cursor/mcp.json</code> globally):</p>
+            <div class="code"><div class="code__bar"><em>.cursor/mcp.json</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
+<pre><code>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"aurum"</span>: { <span class="k">"command"</span>: <span class="s">"node"</span>, <span class="k">"args"</span>: [<span class="s">"/absolute/path/aurum-mcp/server/src/index.js"</span>] }
+  }
+}</code></pre></div>
+          </div>
+          <div class="tabs__panel" data-panel="other">
+            <p>Any client that supports MCP over stdio works: Windsurf, Zed, Cline, Continue, the OpenAI Agents SDK and custom agents built on the MCP SDK. Point it at <code>node …/server/src/index.js</code>. Environment variables configure the policy (see <a href="#config">Configuration</a>).</p>
+          </div>
+        </div>
+        <figure class="shot shot--tight">
+          <img src="docs/img/agent-chat.jpg" alt="Illustration of an MCP client conversation where the agent scans a token, checks policy and refuses a risky purchase" loading="lazy" />
+          <figcaption>What a session looks like: the agent scans the token, asks the policy engine, and advises against the purchase. (Illustrative conversation; the token address is shortened.)</figcaption>
+        </figure>
+      </section>
+
+      <section id="tools" class="doc-sec">
+        <h2>Tool reference</h2>
+        <p>Every tool returns JSON as text content. Errors come back with <code>isError: true</code> and a readable message, so the agent can recover. Tools marked <span class="pill pill--ro">read-only</span> never move funds.</p>
+        <figure class="shot shot--tight">
+          <img src="docs/img/landing-tools.jpg" alt="Tool catalog on the landing page showing live and upcoming tools" loading="lazy" />
+          <figcaption>The tool catalog on the landing page. <span class="g">● live</span> tools are documented below; the rest are on the roadmap.</figcaption>
+        </figure>
+
+        <article class="tool-doc" id="t-get_price">
+          <header><h3><code>get_price</code></h3><span class="pill pill--ro">read-only</span><span class="pill">market</span></header>
+          <p>Spot price in USD, 24h change, market cap and 24h volume for one or more tokens. Accepts common symbols (<code>ETH</code>, <code>TAO</code>, <code>SOL</code>…) or CoinGecko ids. Unknown symbols are resolved through CoinGecko search.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody><tr><td><code>tokens</code> <i>required</i></td><td>string[] (1–25)</td><td>Symbols or ids, e.g. <code>["ETH", "bittensor"]</code></td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>[{ <span class="k">"token"</span>: <span class="s">"ETH"</span>, <span class="k">"id"</span>: <span class="s">"ethereum"</span>, <span class="k">"price_usd"</span>: 1620.31, <span class="k">"change_24h_pct"</span>: -7.18,
+   <span class="k">"market_cap_usd"</span>: 198124467910, <span class="k">"volume_24h_usd"</span>: 19805715629 }]</code></pre></div>
+          <p class="ask">Ask your agent: <i>"What are ETH, SOL and TAO doing today?"</i></p>
+        </article>
+
+        <article class="tool-doc" id="t-trending_tokens">
+          <header><h3><code>trending_tokens</code></h3><span class="pill pill--ro">read-only</span><span class="pill">market</span></header>
+          <p>The most-searched tokens right now, with name, symbol, market-cap rank, price and 24h change. No parameters.</p>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>[{ <span class="k">"name"</span>: <span class="s">"Bitcoin"</span>, <span class="k">"symbol"</span>: <span class="s">"BTC"</span>, <span class="k">"market_cap_rank"</span>: 1, <span class="k">"price_usd"</span>: 58978.51, <span class="k">"change_24h_pct"</span>: -4.45 }, …]</code></pre></div>
+          <p class="ask">Ask: <i>"What's trending in crypto right now? Scan anything under rank 500."</i></p>
+        </article>
+
+        <article class="tool-doc" id="t-get_gas">
+          <header><h3><code>get_gas</code></h3><span class="pill pill--ro">read-only</span><span class="pill">market</span></header>
+          <p>Current gas price on an EVM chain, plus the estimated USD cost of a simple transfer (21k gas) and a typical swap (150k gas).</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody><tr><td><code>chain</code></td><td>enum</td><td><code>ethereum</code> (default), <code>base</code>, <code>arbitrum</code>, <code>optimism</code>, <code>polygon</code>, <code>bsc</code>, <code>avalanche</code></td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"chain"</span>: <span class="s">"base"</span>, <span class="k">"gas_gwei"</span>: 0.006, <span class="k">"native_usd"</span>: 1620.05, <span class="k">"transfer_usd"</span>: 0.0002, <span class="k">"swap_usd"</span>: 0.0015 }</code></pre></div>
+          <p class="ask">Ask: <i>"Is it cheaper to swap on Base or Arbitrum right now?"</i></p>
+        </article>
+
+        <article class="tool-doc" id="t-get_balance">
+          <header><h3><code>get_balance</code></h3><span class="pill pill--ro">read-only</span><span class="pill">wallets</span></header>
+          <p>Native balance of any address, valued in USD at the current price.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody><tr><td><code>address</code> <i>required</i></td><td>0x… (40 hex)</td><td>Wallet or contract address</td></tr><tr><td><code>chain</code></td><td>enum</td><td>Default <code>ethereum</code></td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"address"</span>: <span class="s">"0xd8dA…6045"</span>, <span class="k">"chain"</span>: <span class="s">"ethereum"</span>, <span class="k">"symbol"</span>: <span class="s">"ETH"</span>, <span class="k">"balance"</span>: <span class="s">"5.79956339"</span>, <span class="k">"value_usd"</span>: 9395.58 }</code></pre></div>
+        </article>
+
+        <article class="tool-doc" id="t-scan_token">
+          <header><h3><code>scan_token</code></h3><span class="pill pill--ro">read-only</span><span class="pill">risk</span></header>
+          <p>Security scan of a token contract. AURUM fetches GoPlus Security data and turns it into a <strong>0–100 risk score</strong> (higher means riskier), a verdict and a list of flags. Agents should run it before buying any unfamiliar token.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody><tr><td><code>address</code> <i>required</i></td><td>0x…</td><td>Token contract</td></tr><tr><td><code>chain</code></td><td>enum</td><td>Default <code>ethereum</code></td></tr></tbody></table>
+          <table class="params params--score"><thead><tr><th>Check</th><th>Points</th></tr></thead><tbody>
+            <tr><td>Honeypot (cannot sell)</td><td>+60</td></tr><tr><td>Owner can modify balances</td><td>+25</td></tr><tr><td>Cannot sell entire balance</td><td>+25</td></tr>
+            <tr><td>Source not verified</td><td>+20</td></tr><tr><td>Mintable · hidden owner · self-destruct · buy/sell tax &gt; 10%</td><td>+15 each</td></tr>
+            <tr><td>Top-10 holders &gt; 60%</td><td>+12</td></tr><tr><td>Blacklist · pausable transfers · &lt; 50% LP locked</td><td>+10 each</td></tr><tr><td>Upgradeable proxy</td><td>+8</td></tr>
+          </tbody></table>
+          <p>Verdicts: <b class="r">≥ 60 DANGEROUS</b> · <b class="y">30–59 CAUTION</b> · <b class="g">&lt; 30 no major red flags</b>.</p>
+          <div class="code"><div class="code__bar"><em>response · USDC on Base</em></div><pre><code>{ <span class="k">"token"</span>: { <span class="k">"name"</span>: <span class="s">"USD Coin"</span>, <span class="k">"symbol"</span>: <span class="s">"USDC"</span>, <span class="k">"holders"</span>: 11788779 },
+  <span class="k">"risk_score"</span>: 8, <span class="k">"verdict"</span>: <span class="s">"No major red flags found"</span>, <span class="k">"flags"</span>: [<span class="s">"upgradeable proxy"</span>],
+  <span class="k">"taxes"</span>: { <span class="k">"buy_pct"</span>: 0, <span class="k">"sell_pct"</span>: 0 }, <span class="k">"top10_holders_pct"</span>: 28.11, <span class="k">"source"</span>: <span class="s">"GoPlus Security"</span> }</code></pre></div>
+        </article>
+
+        <article class="tool-doc" id="t-check_address">
+          <header><h3><code>check_address</code></h3><span class="pill pill--ro">read-only</span><span class="pill">risk</span></header>
+          <p>Reputation check for an address: phishing, drainer contracts, sanctions, mixers, honeypot deployers and other malicious activity. Run it before sending funds anywhere new.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>address</code> <i>required</i></td><td>0x…</td><td>Address to check</td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"address"</span>: <span class="s">"0xd8dA…6045"</span>, <span class="k">"flagged"</span>: false, <span class="k">"flags"</span>: [], <span class="k">"source"</span>: <span class="s">"GoPlus Security"</span> }</code></pre></div>
+        </article>
+
+        <article class="tool-doc" id="t-policy_check">
+          <header><h3><code>policy_check</code></h3><span class="pill pill--ro">read-only</span><span class="pill pill--gold">policy</span></header>
+          <p>Asks the policy engine whether a proposed spend is allowed. If a recipient is given, AURUM checks its reputation automatically, and a flagged recipient is always denied. Agents <strong>must</strong> call this before moving funds and respect the answer.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody>
+            <tr><td><code>value_usd</code> <i>required</i></td><td>number ≥ 0</td><td>USD value of the spend</td></tr>
+            <tr><td><code>recipient</code></td><td>0x…</td><td>Recipient address (reputation-checked)</td></tr>
+            <tr><td><code>merchant</code></td><td>string</td><td>Protocol / domain, e.g. <code>uniswap</code>, <code>api.example.com</code></td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"decision"</span>: <span class="s">"needs_approval"</span>, <span class="k">"reasons"</span>: [<span class="s">"above per-transaction limit of $25"</span>], <span class="k">"remainingTodayUsd"</span>: 50, <span class="k">"recipient_flags"</span>: [] }</code></pre></div>
+          <p>See <a href="#policy">Policy engine</a> for the full decision logic.</p>
+        </article>
+
+        <article class="tool-doc" id="t-x402_quote">
+          <header><h3><code>x402_quote</code></h3><span class="pill pill--ro">read-only</span><span class="pill">payments</span></header>
+          <p>Requests a URL. If the server answers <code>HTTP 402 Payment Required</code> using the x402 protocol, AURUM parses the payment options (scheme, network, asset, pay-to address, amount) and returns the policy decision for the cheapest one. <strong>It does not pay.</strong> Settlement is on the roadmap.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code> <i>required</i></td><td>URL</td><td>Resource to quote</td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response · paywalled resource</em></div><pre><code>{ <span class="k">"status"</span>: 402, <span class="k">"paywalled"</span>: true, <span class="k">"x402_version"</span>: 1,
+  <span class="k">"options"</span>: [{ <span class="k">"scheme"</span>: <span class="s">"exact"</span>, <span class="k">"network"</span>: <span class="s">"base"</span>, <span class="k">"amount_usd"</span>: 0.02, <span class="k">"pay_to"</span>: <span class="s">"0x…"</span> }],
+  <span class="k">"policy"</span>: { <span class="k">"decision"</span>: <span class="s">"allow"</span>, <span class="k">"reasons"</span>: [<span class="s">"within micro-payment allowance ($1)"</span>] } }</code></pre></div>
+        </article>
+
+        <article class="tool-doc" id="t-spending_report">
+          <header><h3><code>spending_report</code></h3><span class="pill pill--ro">read-only</span><span class="pill pill--gold">policy</span></header>
+          <p>Today's spend (UTC day), the remaining budget, ledger entries and the active policy limits. No parameters.</p>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"day"</span>: <span class="s">"2026-11-20"</span>, <span class="k">"spentUsd"</span>: 0, <span class="k">"remainingUsd"</span>: 50, <span class="k">"entries"</span>: [],
+  <span class="k">"policy"</span>: { <span class="k">"dailyLimitUsd"</span>: 50, <span class="k">"perTxLimitUsd"</span>: 25, <span class="k">"hardCapUsd"</span>: 500, <span class="k">"microAllowanceUsd"</span>: 1, <span class="k">"requireApproval"</span>: true } }</code></pre></div>
+        </article>
+      </section>
+
+      <section id="resources" class="doc-sec">
+        <h2>Resources</h2>
+        <p>Besides tools, AURUM exposes MCP <em>resources</em>: read-only documents a client can attach to the context.</p>
+        <table class="params"><thead><tr><th>URI</th><th>Type</th><th>Content</th></tr></thead><tbody><tr><td><code>aurum://policy</code></td><td>application/json</td><td>The active spending policy (limits, allow/deny lists)</td></tr></tbody></table>
+      </section>
+
+      <section id="config" class="doc-sec">
+        <h2>Configuration</h2>
+        <p>All configuration lives in environment variables, set in your MCP client config. Defaults are deliberately conservative.</p>
+        <table class="params"><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+          <tr><td><code>AURUM_DAILY_LIMIT_USD</code></td><td>50</td><td>Total the agent may spend per UTC day</td></tr>
+          <tr><td><code>AURUM_PER_TX_LIMIT_USD</code></td><td>25</td><td>Above this, a human must approve</td></tr>
+          <tr><td><code>AURUM_HARD_CAP_USD</code></td><td>500</td><td>Above this, always denied, even with approval</td></tr>
+          <tr><td><code>AURUM_MICRO_ALLOWANCE_USD</code></td><td>1</td><td>Micro-payments at or below this pass automatically (within the daily limit)</td></tr>
+          <tr><td><code>AURUM_ALLOWLIST</code></td><td>(empty)</td><td>Comma-separated merchants. If set, anyone else above the micro allowance is denied</td></tr>
+          <tr><td><code>AURUM_DENYLIST</code></td><td>(empty)</td><td>Always denied</td></tr>
+          <tr><td><code>AURUM_REQUIRE_APPROVAL</code></td><td>true</td><td>Require approval for every non-micro spend</td></tr>
+          <tr><td><code>AURUM_LEDGER</code></td><td>~/.aurum-mcp/ledger.json</td><td>Where the daily spend ledger is stored</td></tr>
+        </tbody></table>
+        <h3>Recommended profiles</h3>
+        <div class="profiles">
+          <div><b>Research agent</b><code>DAILY=5 · MICRO=0.10 · REQUIRE_APPROVAL=true</code><span>Reads data and pays cents for APIs, never trades.</span></div>
+          <div><b>Assistant</b><code>DAILY=50 · PER_TX=25 · ALLOWLIST=uniswap,aave</code><span>Small swaps on known protocols, larger ones need a tap.</span></div>
+          <div><b>Treasury bot</b><code>DAILY=2000 · PER_TX=250 · HARD_CAP=1000</code><span>Higher limits, strict allowlist, full ledger review.</span></div>
+        </div>
+      </section>
+
+      <section id="policy" class="doc-sec">
+        <h2>Policy engine</h2>
+        <p>The policy engine is the core of AURUM. It is ~100 lines of plain, auditable code (<code>server/src/policy.js</code>) that turns a proposed spend into one of three decisions:</p>
+        <div class="decisions">
+          <div class="dec dec--allow"><b>allow</b><span>Within every limit. Typically an x402 micro-payment.</span></div>
+          <div class="dec dec--ask"><b>needs_approval</b><span>Over a soft limit. A human must confirm.</span></div>
+          <div class="dec dec--deny"><b>deny</b><span>Breaks a hard rule. Nothing can override it.</span></div>
+        </div>
+        <figure class="diagram" aria-label="Policy decision flowchart">
+          <svg viewBox="0 0 860 300" role="img">
+            <g font-family="Inter, sans-serif" font-size="12.5" fill="#d6d6de">
+              <rect x="10" y="125" width="120" height="50" rx="25" fill="#0d0d15" stroke="rgba(255,255,255,.2)"/><text x="70" y="155" text-anchor="middle" fill="#fff">Proposed spend</text>
+              <rect x="170" y="110" width="170" height="80" rx="8" fill="#1a0808" stroke="#ff5a5a"/>
+              <text x="255" y="136" text-anchor="middle" fill="#ff8a8a" font-weight="600">Hard rules</text>
+              <text x="255" y="156" text-anchor="middle" fill="#a0a0b0" font-size="11">flagged recipient · denylist</text>
+              <text x="255" y="172" text-anchor="middle" fill="#a0a0b0" font-size="11">&gt; hard cap · not allowlisted</text>
+              <rect x="390" y="110" width="170" height="80" rx="8" fill="#08160d" stroke="#21d36b"/>
+              <text x="475" y="136" text-anchor="middle" fill="#5ee69a" font-weight="600">Micro allowance?</text>
+              <text x="475" y="156" text-anchor="middle" fill="#a0a0b0" font-size="11">≤ $1 and daily budget left</text>
+              <rect x="610" y="110" width="170" height="80" rx="8" fill="#1a1406" stroke="#ffb020"/>
+              <text x="695" y="136" text-anchor="middle" fill="#ffc85a" font-weight="600">Soft limits</text>
+              <text x="695" y="156" text-anchor="middle" fill="#a0a0b0" font-size="11">per-tx · daily remaining</text>
+              <text x="695" y="172" text-anchor="middle" fill="#a0a0b0" font-size="11">require-approval flag</text>
+              <path d="M130 150 H162" stroke="#888" marker-end="url(#arr)"/>
+              <path d="M340 150 H382" stroke="#888" marker-end="url(#arr)"/><text x="361" y="142" text-anchor="middle" font-size="10.5" fill="#8a8a99">pass</text>
+              <path d="M560 150 H602" stroke="#888" marker-end="url(#arr)"/><text x="581" y="142" text-anchor="middle" font-size="10.5" fill="#8a8a99">no</text>
+              <path d="M255 190 V245" stroke="#ff5a5a" marker-end="url(#arr)"/><text x="268" y="222" font-size="10.5" fill="#8a8a99">fail</text>
+              <rect x="195" y="250" width="120" height="36" rx="18" fill="#2a0a0a" stroke="#ff5a5a"/><text x="255" y="273" text-anchor="middle" fill="#ff8a8a" font-weight="600">DENY</text>
+              <path d="M475 110 V58" stroke="#21d36b" marker-end="url(#arr)"/><text x="488" y="88" font-size="10.5" fill="#8a8a99">yes</text>
+              <rect x="415" y="16" width="120" height="36" rx="18" fill="#0a2a14" stroke="#21d36b"/><text x="475" y="39" text-anchor="middle" fill="#5ee69a" font-weight="600">ALLOW</text>
+              <path d="M695 190 V245" stroke="#ffb020" marker-end="url(#arr)"/><text x="708" y="222" font-size="10.5" fill="#8a8a99">over</text>
+              <rect x="610" y="250" width="170" height="36" rx="18" fill="#2a1f06" stroke="#ffb020"/><text x="695" y="273" text-anchor="middle" fill="#ffc85a" font-weight="600">NEEDS_APPROVAL</text>
+              <path d="M695 110 V58 H545" stroke="#21d36b" fill="none" marker-end="url(#arr)"/><text x="705" y="88" font-size="10.5" fill="#8a8a99">within</text>
+            </g>
+          </svg>
+          <figcaption>Evaluation order: hard rules first (any failure is final), then the micro allowance, then soft limits.</figcaption>
+        </figure>
+        <figure class="shot shot--tight">
+          <img src="docs/img/policy-decisions.jpg" alt="Terminal showing three policy decisions: allow, needs approval and deny" loading="lazy" />
+          <figcaption>Real decisions from the test suite with <code>AURUM_DAILY_LIMIT_USD=50</code> and <code>AURUM_ALLOWLIST=uniswap</code>.</figcaption>
+        </figure>
+        <h3>Why it's injection-proof</h3>
+        <p>Limits are read from environment variables when the process starts and enforced in code. The model can only <em>ask</em> for a decision through <code>policy_check</code>; no tool exists that changes the policy at runtime. A prompt-injected agent can request a $10,000 transfer, and the engine returns <code>deny</code>.</p>
+        <h3>The ledger</h3>
+        <p>Approved spends are written to a JSON ledger (<code>~/.aurum-mcp/ledger.json</code>) that resets every UTC day. Restarting the server or the client doesn't reset the budget.</p>
+      </section>
+
+      <section id="x402" class="doc-sec">
+        <h2>x402 payments</h2>
+        <p><strong>x402</strong> revives the long-unused <code>HTTP 402 Payment Required</code> status code for machine payments. Instead of API keys and monthly plans, a server answers 402 with a price, the client pays a few cents in a stablecoin, and retries the request with a payment proof. This fits AI agents well: no sign-ups, pay per use, settled on-chain.</p>
+        <figure class="diagram" aria-label="x402 sequence diagram">
+          <svg viewBox="0 0 860 260" role="img">
+            <g font-family="Inter, sans-serif" font-size="12.5" fill="#d6d6de">
+              <text x="120" y="24" text-anchor="middle" fill="#fff" font-weight="600">Agent + AURUM</text>
+              <text x="740" y="24" text-anchor="middle" fill="#fff" font-weight="600">Paid API</text>
+              <path d="M120 36 V250" stroke="rgba(255,255,255,.2)" stroke-dasharray="3 5"/><path d="M740 36 V250" stroke="rgba(255,255,255,.2)" stroke-dasharray="3 5"/>
+              <path d="M120 66 H732" stroke="#9fb4ff" marker-end="url(#arr)"/><text x="430" y="58" text-anchor="middle">1 · GET /v1/weather/dubai</text>
+              <path d="M740 106 H128" stroke="#e7b94f" marker-end="url(#arr)"/><text x="430" y="98" text-anchor="middle">2 · 402 Payment Required · 0.02 USDC on Base</text>
+              <rect x="150" y="122" width="300" height="40" rx="6" fill="#120f09" stroke="#e7b94f"/><text x="300" y="147" text-anchor="middle" fill="#fbe7a1">3 · policy_check → allow (micro)</text>
+              <path d="M120 194 H732" stroke="#9fb4ff" marker-end="url(#arr)"/><text x="430" y="186" text-anchor="middle">4 · retry with X-PAYMENT header (signed)</text>
+              <path d="M740 234 H128" stroke="#21d36b" marker-end="url(#arr)"/><text x="430" y="226" text-anchor="middle">5 · 200 OK + data · settled on-chain</text>
+            </g>
+          </svg>
+          <figcaption>Steps 1–3 are live today via <code>x402_quote</code>. Steps 4–5 (signing and settlement) arrive with agent wallets.</figcaption>
+        </figure>
+      </section>
+
+      <section id="security" class="doc-sec">
+        <h2>Security model</h2>
+        <div class="threats">
+          <div><b>Prompt injection</b><span>Policy is enforced outside the model. No tool can modify limits.</span></div>
+          <div><b>Malicious tokens</b><span><code>scan_token</code> flags honeypots, mint authority, taxes and unlocked LP before a buy.</span></div>
+          <div><b>Drainer addresses</b><span>Recipients are reputation-checked inside <code>policy_check</code>. Flagged means deny.</span></div>
+          <div><b>Bad input</b><span>JSON-schema validation rejects malformed addresses, unknown chains and negative amounts.</span></div>
+          <div><b>Key exposure</b><span>v0.1 holds no keys at all. Future agent wallets use scoped session keys, never your main key.</span></div>
+          <div><b>Third-party data</b><span>Data sources can be wrong or down. AURUM reports errors explicitly and the agent should treat "unknown" as risky.</span></div>
+        </div>
+        <div class="callout callout--warn"><b>Disclaimer</b> AURUM reduces risk but cannot remove it. Risk scores come from third-party heuristics. This is not financial advice; you are responsible for funds your agents control.</div>
+      </section>
+
+      <section id="token" class="doc-sec">
+        <h2>AUR token <span class="fade">(concept)</span></h2>
+        <div class="callout"><b>Status</b> No token exists. This section describes the proposed design for the hosted gateway network. Beware of anyone selling "AUR" today.</div>
+        <figure class="shot shot--tight"><img src="docs/img/landing-token.jpg" alt="Token section of the landing page with the AUR coin" loading="lazy" /></figure>
+        <table class="params"><thead><tr><th>Asset</th><th>Role</th></tr></thead><tbody>
+          <tr><td><b>AUR</b></td><td>Pays for premium tools and data on the hosted gateway; operator staking; governance. 1% of every paid call is burned.</td></tr>
+          <tr><td><b>xAUR</b></td><td>Staked AUR. Gateway node operators earn a share of x402 fees routed through their node.</td></tr></tbody></table>
+        <p>Proposed allocation: 35% ecosystem &amp; agents · 20% node operator rewards · 18% core contributors (4-year vest) · 15% treasury · 12% liquidity &amp; launch.</p>
+        <p>The open-source server will always work without any token.</p>
+      </section>
+
+      <section id="roadmap" class="doc-sec">
+        <h2>Roadmap</h2>
+        <ul class="road">
+          <li class="done"><em>Q3 2026</em><b>Genesis</b>Market and wallet tools on 7 EVM chains, stdio transport.</li>
+          <li class="now"><em>Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓. Next: swap quotes and fork simulation.</li>
+          <li><em>Q1 2027</em><b>Wallets &amp; payments</b>ERC-4337 agent wallets with session keys, x402 settlement, Telegram approvals, HTTP transport.</li>
+          <li><em>Q2 2027</em><b>Gateway</b>Hosted gateway network, Solana support, agent-to-agent marketplace.</li>
+        </ul>
+      </section>
+
+      <section id="faq" class="doc-sec">
+        <h2>FAQ</h2>
+        <details><summary>Do I need an API key or wallet?</summary><p>No. All current tools use free public endpoints and are read-only.</p></details>
+        <details><summary>Can my agent actually move money today?</summary><p>Not yet, and that is deliberate. v0.1 provides market intelligence, risk checks and policy decisions. Execution (agent wallets, swaps, x402 settlement) ships next, on top of the same policy engine.</p></details>
+        <details><summary>Which AI models work with it?</summary><p>Any model behind an MCP-capable client: Claude (Desktop, Code), Cursor, Windsurf, Zed, Cline, the OpenAI Agents SDK, or your own agent built on the MCP SDK.</p></details>
+        <details><summary>Is my data sent anywhere?</summary><p>Only the queries a tool needs: token ids to CoinGecko, addresses to the RPC and GoPlus. AURUM has no telemetry.</p></details>
+        <details><summary>What happens when a data source is down?</summary><p>The tool returns <code>isError: true</code> with the reason. Requests time out after 12 seconds, so the agent is never left hanging.</p></details>
+        <details><summary>How is this different from giving the agent an exchange API key?</summary><p>An exchange key lets the model do anything the key allows. AURUM's policy engine sits in between with limits, allowlists and approvals that the model cannot change.</p></details>
+      </section>
+
+      <section id="contributing" class="doc-sec">
+        <h2>Contributing</h2>
+        <p>AURUM is MIT-licensed and contributions are welcome. A new tool is about 20 lines: register it in <code>server/src/index.js</code> with a zod schema and a handler, put data access in <code>data.js</code>, and add a call to <code>test/smoke.js</code>.</p>
+        <div class="code"><div class="code__bar"><em>server/src/index.js</em></div>
+<pre><code>server.registerTool(<span class="s">'my_tool'</span>, {
+  title: <span class="s">'My tool'</span>,
+  description: <span class="s">'What it does and when the agent should use it.'</span>,
+  inputSchema: { address: Address, chain: Chain },
+  annotations: { readOnlyHint: <span class="k">true</span> },
+}, safe(<span class="k">async</span> ({ address, chain }) =&gt; {
+  <span class="k">return</span> { address, chain, result: <span class="s">'…'</span> };
+}));</code></pre></div>
+        <p>Good first issues: ERC-20 balances, <code>quote_swap</code> through a DEX aggregator, Solana RPC support, more chains.</p>
+        <div class="docs-end">
+          <a href="#overview" class="btn btn--ghost">Back to top ↑</a>
+          <a href="index.html" class="btn btn--gold">Back to site <i class="spark">✦</i></a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="lightbox" id="lightbox" hidden><img alt="" /></div>
+  <script type="module" src="js/docs.js"></script>
+</body>
+</html>

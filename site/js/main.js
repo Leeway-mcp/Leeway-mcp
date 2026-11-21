@@ -209,6 +209,34 @@ if (!reduced && matchMedia('(hover: hover)').matches) {
   });
 }
 
+/* ---------- hero live feed ---------- */
+(() => {
+  const r = (a, b) => Math.floor(a + Math.random() * (b - a));
+  const tools = ['get_price', 'scan_token', 'get_gas', 'check_address', 'get_balance', 'x402_quote', 'trending_tokens'];
+  const merchants = ['meteo.xyz', 'newsapi.ai', 'chainstats.io', 'llm-router.dev', 'maps.agent'];
+  const feeds = [
+    () => [`agent#${r(1000, 9999)} → paid <b>0.0${r(1, 9)} USDC</b>`, 'x402', ''],
+    () => [`tool: <b>${tools[r(0, tools.length)]}</b> · ${r(90, 260)}ms`, '●', 'ok'],
+    () => Math.random() < 0.75
+      ? [`policy: <b>${merchants[r(0, merchants.length)]}</b> allowed ✓`, 'guard', '']
+      : [`policy: <b>$${r(60, 900)} spend</b> held for approval`, 'hold', ''],
+  ];
+  const tags = $$('[data-feed]');
+  if (!tags.length || reduced) return;
+  let k = 0;
+  setInterval(() => {
+    const tag = tags[k % tags.length];
+    const [html, badge, cls] = feeds[+tag.dataset.feed]();
+    tag.classList.add('is-swap');
+    setTimeout(() => {
+      tag.querySelector('span').innerHTML = html;
+      const em = tag.querySelector('em'); em.textContent = badge; em.className = cls;
+      tag.classList.remove('is-swap');
+    }, 300);
+    k++;
+  }, 1600);
+})();
+
 /* ---------- magnetic buttons ---------- */
 if (!reduced && matchMedia('(hover: hover)').matches) {
   $$('.btn').forEach((b) => {

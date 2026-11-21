@@ -1,6 +1,7 @@
 // AURUM MCP · Three.js scenes (globe + procedural gold objects)
 import * as THREE from 'three';
 import { RoomEnvironment } from '../assets/RoomEnvironment.js';
+import { initGlobe } from './globe.js';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isMobile = matchMedia('(max-width: 900px)').matches;
@@ -83,159 +84,6 @@ class Squircle extends THREE.Curve {
   }
 }
 const linkGeo = (size = 1, tube = 0.2) => new THREE.TubeGeometry(new Squircle(size), 260, tube, 32, true);
-
-/* =========================================================
-   GLOBE
-   ========================================================= */
-function initGlobe(canvas) {
-  const stage = makeStage(canvas, { fov: 30, z: 9.2 });
-  const { scene } = stage;
-  const R = 2.2;
-  const group = new THREE.Group();
-  group.rotation.set(0.32, reduced ? 0.95 : 0.58, 0.08); // lands on Europe / Africa after the intro spin
-  scene.add(group);
-
-  // inner dark sphere with fresnel rim
-  const coreMat = new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color('#05060f') }, uRim: { value: new THREE.Color('#7f9bff') } },
-    vertexShader: `varying vec3 vN; varying vec3 vV;
-      void main(){ vec4 mv = modelViewMatrix * vec4(position,1.); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
-    fragmentShader: `uniform vec3 uColor; uniform vec3 uRim; varying vec3 vN; varying vec3 vV;
-      void main(){ float f = pow(1. - max(dot(vN, vV), 0.), 3.2); vec3 c = mix(uColor, uRim, f*0.9) + vec3(1.)*pow(f,7.)*0.9; gl_FragColor = vec4(c,1.); }`,
-  });
-  const core = new THREE.Mesh(new THREE.SphereGeometry(R * 0.995, 96, 96), coreMat);
-  group.add(core);
-
-  // outer atmosphere
-  const atmo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.22, 96, 96), new THREE.ShaderMaterial({
-    side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    vertexShader: `varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix*vec4(position,1.); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
-    fragmentShader: `varying vec3 vN; varying vec3 vV; void main(){ float i = pow(max(0.72 - dot(vN, -vV) * -1. , 0.), 4.0); float d = dot(vN, vV); float g = smoothstep(0.0, 0.55, -d) * pow(1.0 - abs(d), 2.0) ; gl_FragColor = vec4(vec3(0.36,0.48,1.0) * g * 2.2, g); }`,
-  }));
-  scene.add(atmo);
-
-  // land dots
-  const img = new Image();
-  img.src = 'assets/earth-water.png';
-  img.onload = () => {
-    const cw = 800, ch = 400;
-    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
-    const ctx = cv.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, cw, ch);
-    const data = ctx.getImageData(0, 0, cw, ch).data;
-    const lum = (lat, lon) => {
-      const x = Math.floor(((lon + 180) / 360) * cw) % cw;
-      const y = Math.floor(((90 - lat) / 180) * ch);
-      return data[(y * cw + x) * 4];
-    };
-    // detect which colour is land: the middle of the Pacific is water
-    const waterIsBright = lum(0, -140) > 128;
-    const isLand = (lat, lon) => (waterIsBright ? lum(lat, lon) < 128 : lum(lat, lon) > 128);
-
-    const N = isMobile ? 40000 : 70000;
-    const pos = [], rnd = [];
-    const golden = Math.PI * (3 - Math.sqrt(5));
-    for (let i = 0; i < N; i++) {
-      const y = 1 - (i / (N - 1)) * 2;
-      const r = Math.sqrt(1 - y * y);
-      const th = golden * i;
-      const x = Math.cos(th) * r, z = Math.sin(th) * r;
-      const lat = Math.asin(y) * 180 / Math.PI;
-      const lon = Math.atan2(z, -x) * 180 / Math.PI;
-      if (!isLand(lat, lon)) continue;
-      pos.push(x * R, y * R, z * R);
-      rnd.push(Math.random());
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('aRnd', new THREE.Float32BufferAttribute(rnd, 1));
-    const mat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false,
-      uniforms: { uTime: { value: 0 }, uSize: { value: 2.6 * DPR } },
-      vertexShader: `attribute float aRnd; uniform float uTime; uniform float uSize; varying float vA; varying float vR;
-        void main(){ vec4 mv = modelViewMatrix*vec4(position,1.); vec3 n = normalize(normalMatrix*normalize(position));
-          float facing = dot(n, normalize(-mv.xyz)); vA = smoothstep(-0.05, 0.45, facing);
-          vR = aRnd; float tw = 0.75 + 0.25*sin(uTime*1.5 + aRnd*40.);
-          gl_PointSize = uSize * tw * (8.5 / -mv.z); gl_Position = projectionMatrix*mv; }`,
-      fragmentShader: `varying float vA; varying float vR;
-        void main(){ vec2 c = gl_PointCoord-.5; float d = length(c); if(d>.5) discard;
-          vec3 col = mix(vec3(0.82,0.88,1.0), vec3(1.0,0.86,0.55), step(0.965, vR));
-          gl_FragColor = vec4(col * 1.25, smoothstep(.5,.2,d) * vA); }`,
-    });
-    const dots = new THREE.Points(geo, mat);
-    group.add(dots);
-    stage.dotsMat = mat;
-
-    // agent transaction arcs between random land points
-    const land = [];
-    for (let i = 0; i < pos.length; i += 3 * 37) land.push(new THREE.Vector3(pos[i], pos[i + 1], pos[i + 2]));
-    const arcMat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      uniforms: { uTime: { value: 0 } },
-      vertexShader: `attribute float aT; attribute float aSeed; varying float vT; varying float vSeed;
-        void main(){ vT = aT; vSeed = aSeed; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-      fragmentShader: `uniform float uTime; varying float vT; varying float vSeed;
-        void main(){ float head = fract(uTime*0.22 + vSeed); float d = head - vT; float tail = smoothstep(0.32, 0.0, d) * step(0.0, d);
-          float base = 0.08; vec3 col = mix(vec3(1.,0.72,0.3), vec3(1.,0.95,0.8), tail);
-          gl_FragColor = vec4(col, base + tail*0.95); }`,
-    });
-    const arcs = new THREE.Group();
-    const heads = [];
-    for (let k = 0; k < 18; k++) {
-      const a = land[Math.floor(Math.random() * land.length)], b = land[Math.floor(Math.random() * land.length)];
-      if (!a || !b || a.distanceTo(b) < 1.2) { k--; continue; }
-      const mid = a.clone().add(b).multiplyScalar(0.5);
-      mid.setLength(R + a.distanceTo(b) * 0.38);
-      const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
-      const pts = curve.getPoints(80);
-      const g = new THREE.BufferGeometry().setFromPoints(pts);
-      g.setAttribute('aT', new THREE.Float32BufferAttribute(pts.map((_, i) => i / 80), 1));
-      const seed = Math.random();
-      g.setAttribute('aSeed', new THREE.Float32BufferAttribute(pts.map(() => seed), 1));
-      arcs.add(new THREE.Line(g, arcMat));
-      // endpoint pings
-      [a, b].forEach((p) => {
-        const ring = new THREE.Mesh(new THREE.RingGeometry(0.012, 0.022, 24), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
-        ring.position.copy(p).multiplyScalar(1.003);
-        ring.lookAt(p.clone().multiplyScalar(2));
-        ring.userData.seed = Math.random();
-        arcs.add(ring); heads.push(ring);
-      });
-    }
-    group.add(arcs);
-    stage.arcMat = arcMat;
-    stage.heads = heads;
-  };
-
-  stage.onResize = (w, h) => {
-    // fit globe + atmosphere inside the canvas on both axes
-    const tan = Math.tan(THREE.MathUtils.degToRad(stage.camera.fov / 2));
-    const fit = R * 2.5;
-    stage.camera.position.z = Math.max(fit / (2 * tan), fit / (2 * tan * (w / h)));
-  };
-  stage.onResize(canvas.clientWidth, canvas.clientHeight);
-
-  // intro: globe grows in and spins up; scrolling adds a little extra spin
-  let intro = reduced ? 1 : 0;
-  let lastScroll = scrollY, spin = 0;
-  stage.update = (t, dt) => {
-    intro = Math.min(1, intro + dt * 0.6);
-    const e = 1 - Math.pow(1 - intro, 3);
-    scene.scale.setScalar(0.82 + 0.18 * e);
-    const ds = scrollY - lastScroll; lastScroll = scrollY;
-    spin += ds * 0.0012; spin *= 0.92;
-    group.rotation.y += reduced ? 0 : dt * (0.06 + (1 - e) * 0.9) + spin * 0.1;
-    group.rotation.x = 0.32 + pointer.sy * 0.08;
-    group.rotation.z = 0.08 + pointer.sx * -0.05;
-    scene.position.x = pointer.sx * 0.12;
-    if (stage.dotsMat) stage.dotsMat.uniforms.uTime.value = t;
-    if (stage.arcMat) stage.arcMat.uniforms.uTime.value = t;
-    stage.heads?.forEach((h) => {
-      const p = (t * 0.6 + h.userData.seed) % 1;
-      h.scale.setScalar(1 + p * 3); h.material.opacity = (1 - p) * 0.9;
-    });
-  };
-}
 
 /* =========================================================
    GOLD OBJECT SCENES
@@ -423,14 +271,24 @@ function coinEdgeTexture() {
 function boot() {
   try {
     const globe = document.getElementById('globe');
-    if (globe) initGlobe(globe);
-    document.querySelectorAll('.gold-scene').forEach((cv) => {
-      const build = BUILDERS[cv.dataset.scene];
-      if (!build) return;
-      const stage = makeStage(cv, { fov: 35, z: 6 });
-      goldEnv(stage);
-      build(stage);
-    });
+    if (globe) initGlobe(globe, makeStage, { reduced, isMobile, DPR });
+    // gold scenes are created lazily as they approach the viewport:
+    // each one is a WebGL context + shader compile, too costly to pay all at load
+    const lazy = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        lazy.unobserve(en.target);
+        const build = BUILDERS[en.target.dataset.scene];
+        if (!build) return;
+        try {
+          const stage = makeStage(en.target, { fov: 35, z: 6 });
+          goldEnv(stage);
+          build(stage);
+          stage.visible = true;
+        } catch (err) { console.warn('[aurum] scene failed', err); }
+      });
+    }, { rootMargin: '600px 0px' });
+    document.querySelectorAll('.gold-scene').forEach((cv) => lazy.observe(cv));
     loop();
   } catch (err) {
     console.warn('[aurum] WebGL unavailable, falling back to static visuals', err);
