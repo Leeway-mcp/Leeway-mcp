@@ -216,25 +216,22 @@ const BUILDERS = {
     const root = new THREE.Group();
     stage.scene.add(root);
 
-    // --- emblem (geometry traced from the SVG logo: 40-unit box, centred, y up)
-    const k = 0.0623;
-    const P = (x, y) => new THREE.Vector3((x - 20) * k, (20 - y) * k, 0);
+    // --- emblem: the Drift mark extruded in solid gold with a polished bevel, framed by a hairline ring
+    const k = 0.068;
     const emblem = new THREE.Group();
-    const bright = gold({ roughness: 0.1, clearcoat: 1 });
-    const satin = gold({ roughness: 0.28 });
-    emblem.add(new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.085, 48, 240), bright));
-    emblem.add(new THREE.Mesh(new THREE.TorusGeometry(0.86, 0.022, 16, 220), satin));
-    const rail = new THREE.CapsuleGeometry(0.07, 0.86, 10, 28);
-    [-1, 1].forEach((s) => { const m = new THREE.Mesh(rail, bright); m.position.x = s * 0.523; emblem.add(m); });
-    const sPath = new THREE.CurvePath();
-    sPath.add(new THREE.CubicBezierCurve3(P(20, 27.6), P(13.8, 25.6), P(13.8, 21.6), P(20, 20)));
-    sPath.add(new THREE.CubicBezierCurve3(P(20, 20), P(26.2, 18.4), P(26.2, 14.4), P(20, 12.4)));
-    emblem.add(new THREE.Mesh(new THREE.TubeGeometry(sPath, 200, 0.085, 32, false), bright));
-    [P(20, 27.6), P(20, 12.4)].forEach((p) => { const cap = new THREE.Mesh(new THREE.SphereGeometry(0.085, 32, 16), bright); cap.position.copy(p); emblem.add(cap); });
-    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.09, 0), gold({ flatShading: true, roughness: 0.15 }));
-    gem.scale.set(1, 1.35, 1); gem.position.copy(P(20, 8.4)); emblem.add(gem);
-    emblem.scale.setScalar(1.25);
+    const bright = gold({ roughness: 0.26, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 2.8 });
+    const shapes = driftPolys().map((poly) => new THREE.Shape(poly.map(([x, y]) => new THREE.Vector2((x - 20) * k, (20 - y) * k))));
+    const markGeo = new THREE.ExtrudeGeometry(shapes, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.026, bevelSegments: 8, curveSegments: 1 });
+    markGeo.computeBoundingBox(); markGeo.center();
+    emblem.add(new THREE.Mesh(markGeo, bright));
+    const frame = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.012, 12, 260), gold({ roughness: 0.3 }));
+    frame.position.z = -0.35;
+    emblem.add(frame);
+    emblem.scale.setScalar(0.92);
     root.add(emblem);
+    // a warm light that sweeps across the faces: the polished-gold glint
+    const glint = new THREE.PointLight(0xfff0cc, 40, 9, 1.6);
+    root.add(glint);
 
     // --- halo behind the emblem
     const haloTex = (() => {
@@ -244,7 +241,7 @@ const BUILDERS = {
       x.fillStyle = g; x.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c);
     })();
     const halo = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.MeshBasicMaterial({ map: haloTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-    halo.position.z = -1.2;
+    halo.position.set(0, 0.4, -1.2);
     root.add(halo);
 
     // --- orbits: tilted planes, each a faint line loop carrying coins
@@ -293,9 +290,10 @@ const BUILDERS = {
       tiltY += (pointer.sx * 0.35 - tiltY) * 0.06;
       tiltX += (pointer.sy * 0.12 - tiltX) * 0.06;
       root.rotation.set(0.08 + tiltX, tiltY, 0);
-      emblem.rotation.y = Math.sin(t * 0.45) * 0.55;
-      emblem.position.y = 0.15 + Math.sin(t * 0.9) * 0.05;
-      gem.rotation.y = t * 1.2;
+      emblem.rotation.y = Math.sin(t * 0.45) * 0.42;
+      emblem.position.y = 0.42 + Math.sin(t * 0.9) * 0.05;
+      glint.position.set(Math.sin(t * 0.6) * 2.6, 1.6 + Math.cos(t * 0.4) * 0.6, 2.4);
+      frame.rotation.z = t * 0.1;
       halo.material.opacity = 0.85 + Math.sin(t * 1.3) * 0.15;
       points.rotation.y = t * 0.03 * sp;
       for (const c of coins) {
@@ -319,6 +317,18 @@ const BUILDERS = {
     stage.camera.position.z = 4.2;
   },
 };
+
+/* Leeway mark ("Drift") as polygons in the 40-unit SVG space, y down: mainsail and jib heeled
+   8° with the wind, over a hull. Shared by the coin face and the 3D emblem. */
+function driftPolys() {
+  const a = (8 * Math.PI) / 180, c = Math.cos(a), sn = Math.sin(a);
+  const rot = ([x, y]) => [20 + (x - 20) * c - (y - 20) * sn, 20 + (x - 20) * sn + (y - 20) * c];
+  const up = ([x, y]) => [x, y - 1.2];
+  const main = [[10, 4], [10, 30.5], [25, 30.5]].map(rot).map(up);
+  const jib = [[14.6, 8.4], [28.4, 30.5], [33, 30.5]].map(rot).map(up);
+  const hull = [[5, 34.2], [35, 34.2], [32.4, 37.2], [7.6, 37.2]].map(up);
+  return [main, jib, hull];
+}
 
 /* small token coin face (bump map): reeded rim + raised glyph */
 function glyphTexture(glyph) {
@@ -367,18 +377,16 @@ function coinFaceTexture() {
   for (let i = -4; i <= 4; i++) { x.beginPath(); x.moveTo(0, cx + i * 68); x.lineTo(s, cx + i * 68); x.stroke(); }
   x.restore();
   // central mark
-  // raised Leeway seal: two rails (the limits) and a free S-curve between them
+  // raised Leeway mark (Drift): sails heeling with the wind over a hull
   x.save(); x.translate(cx, cx);
   x.fillStyle = '#5a5a5a';
   x.beginPath(); x.arc(0, 0, 215, 0, Math.PI * 2); x.fill();
-  x.lineJoin = 'round'; x.lineCap = 'round';
-  x.strokeStyle = '#f4f4f4'; x.lineWidth = 64;
-  x.lineWidth = 34;
-  x.beginPath(); x.moveTo(-100, -100); x.lineTo(-100, 100); x.moveTo(100, -100); x.lineTo(100, 100); x.stroke();
-  x.lineWidth = 58;
-  x.beginPath(); x.moveTo(0, 108); x.bezierCurveTo(-80, 82, -80, 22, 0, 0); x.bezierCurveTo(80, -22, 80, -82, 0, -108); x.stroke();
-  x.fillStyle = '#e8e8e8';
-  x.beginPath(); x.moveTo(0, -190); x.lineTo(22, -160); x.lineTo(0, -130); x.lineTo(-22, -160); x.closePath(); x.fill();
+  x.fillStyle = '#f4f4f4';
+  for (const poly of driftPolys()) {
+    x.beginPath();
+    poly.forEach(([px, py], j) => { const X = (px - 20) * 8.4, Y = (py - 20) * 8.4; j ? x.lineTo(X, Y) : x.moveTo(X, Y); });
+    x.closePath(); x.fill();
+  }
   x.restore();
   const t = new THREE.CanvasTexture(c);
   t.anisotropy = 8;
