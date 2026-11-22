@@ -368,33 +368,57 @@
           <p class="label">[ Why us ]</p>
           <h2 class="title">What Makes<br />Leeway <span class="fade">Different</span></h2>
         </header>
-        <div class="orbit reveal" id="orbit" aria-hidden="true">
-          <div class="orbit__ring orbit__ring--1"></div>
-          <div class="orbit__ring orbit__ring--2"></div>
-          <div class="orbit__ring orbit__ring--3"></div>
-          <div class="orbit__coins" id="orbitCoins"></div>
-          <canvas class="gold-scene orbit__center" data-scene="ring"></canvas>
+        <div class="orrery reveal" aria-hidden="true">
+          <canvas class="gold-scene orrery__scene" data-scene="orrery"></canvas>
+          <div class="orrery__chips">
+            <span style="--x:14%;--y:30%"><i></i>limits enforced in code</span>
+            <span style="--x:84%;--y:26%"><i></i>simulated before signing</span>
+            <span style="--x:9%;--y:70%"><i></i>risk scored · 0–100</span>
+            <span style="--x:90%;--y:68%"><i></i>x402 · USDC</span>
+          </div>
         </div>
-        <div class="grid-why">
-          <article class="why corners reveal">
+        <div class="grid-why" id="whyGrid">
+          <article class="why reveal">
+            <span class="why__n">01</span>
             <div class="why__ico"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-            <h3>Policy-guarded wallets</h3>
-            <p>Daily limits, contract allowlists and human approval for anything above your threshold. Enforced server-side, so prompt injection can't get around them.</p>
+            <h3>Limits enforced in code</h3>
+            <p>Daily and per-transaction limits, a hard cap, allowlists and human approval above your threshold. Checked on the server, so no prompt injection can talk its way past them.</p>
+            <code class="why__proof">LEEWAY_DAILY_LIMIT_USD=50</code>
           </article>
-          <article class="why corners reveal">
-            <div class="why__ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 6v12M15 8.5c-.8-.9-1.8-1.2-3-1.2-1.7 0-3 .8-3 2.2 0 3.2 6 1.6 6 4.8 0 1.5-1.4 2.4-3.2 2.4-1.3 0-2.5-.5-3.3-1.4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-            <h3>x402 native payments</h3>
-            <p>Agents pay per request in USDC over HTTP 402. No API keys or subscriptions: machine-to-machine commerce that settles on-chain.</p>
+          <article class="why reveal">
+            <span class="why__n">02</span>
+            <div class="why__ico"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 4v4h4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l3 2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+            <h3>Simulate before you sign</h3>
+            <p>Every transaction is dry-run on live chain state first: what leaves the wallet, what arrives, which approvals it grants and whether it reverts. Drainer patterns get blocked.</p>
+            <code class="why__proof">verdict: DO_NOT_SIGN</code>
           </article>
-          <article class="why corners reveal">
+          <article class="why reveal">
+            <span class="why__n">03</span>
             <div class="why__ico"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
             <h3>Risk intelligence</h3>
-            <p>Honeypot detection, mint and blacklist function analysis, liquidity and holder concentration checks, all before a single wei moves.</p>
+            <p>Honeypots, hidden mint, blacklists, taxes, holder concentration and LP locks, scored 0–100 before a single wei moves. Swaps check the token you are buying automatically.</p>
+            <code class="why__proof">risk_score: 91 · DANGEROUS</code>
           </article>
-          <article class="why corners reveal">
+          <article class="why reveal">
+            <span class="why__n">04</span>
+            <div class="why__ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 6v12M15 8.5c-.8-.9-1.8-1.2-3-1.2-1.7 0-3 .8-3 2.2 0 3.2 6 1.6 6 4.8 0 1.5-1.4 2.4-3.2 2.4-1.3 0-2.5-.5-3.3-1.4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+            <h3>x402 native payments</h3>
+            <p>Agents pay per request in USDC over HTTP 402. No API keys or subscriptions: machine-to-machine commerce that settles on-chain, inside the same limits.</p>
+            <code class="why__proof">402 Payment Required · 0.02 USDC</code>
+          </article>
+          <article class="why reveal">
+            <span class="why__n">05</span>
+            <div class="why__ico"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 15v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
+            <h3>No keys, no accounts</h3>
+            <p>Runs on free public data: no API keys to leak, no sign-up, no telemetry. Every tool is read-only today, so the agent never holds a private key at all.</p>
+            <code class="why__proof">npx -y leeway-mcp</code>
+          </article>
+          <article class="why reveal">
+            <span class="why__n">06</span>
             <div class="why__ico"><svg viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-            <h3>Open-source &amp; self-hostable</h3>
-            <p>MIT licensed and written in TypeScript. Run it locally next to your agent, so your keys never leave your machine.</p>
+            <h3>Open-source &amp; self-hosted</h3>
+            <p>MIT licensed, plain JavaScript with no build step and two dependencies. Read every line of the policy engine, run it next to your agent, fork it.</p>
+            <code class="why__proof">MIT · Node ≥ 18 · 2 deps</code>
           </article>
         </div>
       </div>
@@ -635,5 +659,6 @@
   <script type="module" src="js/main.js"></script>
   <script type="module" src="js/scenes.js"></script>
   <script type="module" src="js/playground.js"></script>
+  <script type="module" src="js/cursor.js"></script>
 </body>
 </html>

@@ -258,41 +258,28 @@ if (!reduced && matchMedia('(hover: hover)').matches) {
   });
 }
 
-/* ---------- orbit coins ---------- */
+/* ---------- why cards: cursor spotlight + subtle 3D tilt ---------- */
 (() => {
-  const wrap = $('#orbitCoins');
-  if (!wrap) return;
-  const glyphs = ['A', 'Ξ', '$', 'τ', 'A', 'S', '◎', 'A', 'x'];
-  const rings = [{ r: 220, cy: 370, n: 2, off: 0.35 }, { r: 350, cy: 420, n: 3, off: 0.2 }, { r: 480, cy: 470, n: 4, off: 0.1 }];
-  const coins = [];
-  let k = 0;
-  rings.forEach((ring, ri) => {
-    for (let i = 0; i < ring.n; i++) {
-      const el = document.createElement('div');
-      el.className = 'ocoin';
-      el.innerHTML = `<i>${glyphs[k++ % glyphs.length]}</i>`;
-      wrap.appendChild(el);
-      coins.push({ el, ring, a: Math.PI + ring.off * Math.PI + (i / (ring.n - 1 || 1)) * (1 - 2 * ring.off) * Math.PI, speed: (ri % 2 ? -1 : 1) * 0.04 });
+  const grid = $('#whyGrid');
+  if (!grid) return;
+  const cards = $$('.why', grid);
+  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  grid.addEventListener('pointermove', (e) => {
+    for (const c of cards) {
+      const r = c.getBoundingClientRect();
+      c.style.setProperty('--mx', `${e.clientX - r.left}px`);
+      c.style.setProperty('--my', `${e.clientY - r.top}px`);
     }
-  });
-  let t0 = performance.now();
-  const tick = (t) => {
-    const dt = (t - t0) / 1000; t0 = t;
-    const W = wrap.clientWidth, scale = Math.min(1, W / 980);
-    coins.forEach((c) => {
-      if (!reduced) c.a += c.speed * dt;
-      const lo = Math.PI * (1 + c.ring.off * 0.6), hi = Math.PI * (2 - c.ring.off * 0.6);
-      if (c.a > hi) c.a = lo; if (c.a < lo) c.a = hi;
-      const x = W / 2 + Math.cos(c.a) * c.ring.r * scale;
-      const y = (c.ring.cy - c.ring.r) * scale + c.ring.r * scale + Math.sin(c.a) * c.ring.r * scale;
-      const edge = Math.min(c.a - lo, hi - c.a);
-      const hide = scale < 0.6 && c.ring === rings[0];
-      c.el.style.opacity = hide ? 0 : Math.min(1, edge * 3);
-      c.el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale < 0.6 ? 0.8 : 1})`;
+  }, { passive: true });
+  if (!fine || reduced) return;
+  cards.forEach((c) => {
+    c.addEventListener('pointermove', (e) => {
+      const r = c.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5;
+      c.style.transform = `perspective(900px) rotateX(${(-py * 5).toFixed(2)}deg) rotateY(${(px * 6).toFixed(2)}deg) translateY(-4px)`;
     });
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
+    c.addEventListener('pointerleave', () => { c.style.transform = ''; });
+  });
 })();
 
 /* ---------- agent terminal demo ---------- */

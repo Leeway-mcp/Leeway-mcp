@@ -209,6 +209,108 @@ const BUILDERS = {
     };
     stage.camera.position.z = 4.6;
   },
+  /* "Why" section centrepiece: the Leeway mark in solid gold (two rails = the limits, an
+     S-curve = the freedom between them) inside a seal ring, with real 3D token coins on
+     tilted orbits that pass behind and in front of it, gold dust and a soft halo. */
+  orrery(stage) {
+    const root = new THREE.Group();
+    stage.scene.add(root);
+
+    // --- emblem (geometry traced from the SVG logo: 40-unit box, centred, y up)
+    const k = 0.0623;
+    const P = (x, y) => new THREE.Vector3((x - 20) * k, (20 - y) * k, 0);
+    const emblem = new THREE.Group();
+    const bright = gold({ roughness: 0.1, clearcoat: 1 });
+    const satin = gold({ roughness: 0.28 });
+    emblem.add(new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.085, 48, 240), bright));
+    emblem.add(new THREE.Mesh(new THREE.TorusGeometry(0.86, 0.022, 16, 220), satin));
+    const rail = new THREE.CapsuleGeometry(0.07, 0.86, 10, 28);
+    [-1, 1].forEach((s) => { const m = new THREE.Mesh(rail, bright); m.position.x = s * 0.523; emblem.add(m); });
+    const sPath = new THREE.CurvePath();
+    sPath.add(new THREE.CubicBezierCurve3(P(20, 27.6), P(13.8, 25.6), P(13.8, 21.6), P(20, 20)));
+    sPath.add(new THREE.CubicBezierCurve3(P(20, 20), P(26.2, 18.4), P(26.2, 14.4), P(20, 12.4)));
+    emblem.add(new THREE.Mesh(new THREE.TubeGeometry(sPath, 200, 0.085, 32, false), bright));
+    [P(20, 27.6), P(20, 12.4)].forEach((p) => { const cap = new THREE.Mesh(new THREE.SphereGeometry(0.085, 32, 16), bright); cap.position.copy(p); emblem.add(cap); });
+    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.09, 0), gold({ flatShading: true, roughness: 0.15 }));
+    gem.scale.set(1, 1.35, 1); gem.position.copy(P(20, 8.4)); emblem.add(gem);
+    emblem.scale.setScalar(1.25);
+    root.add(emblem);
+
+    // --- halo behind the emblem
+    const haloTex = (() => {
+      const c = document.createElement('canvas'); c.width = c.height = 256;
+      const x = c.getContext('2d'); const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+      g.addColorStop(0, 'rgba(255,214,130,0.55)'); g.addColorStop(0.35, 'rgba(231,170,60,0.18)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c);
+    })();
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.MeshBasicMaterial({ map: haloTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    halo.position.z = -1.2;
+    root.add(halo);
+
+    // --- orbits: tilted planes, each a faint line loop carrying coins
+    const glyphs = ['Ξ', '₿', '$', 'τ', '◎', '402', 'Ξ', '$', 'A'];
+    const coinGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.05, 64);
+    const edgeMat = gold({ roughness: 0.3 });
+    const orbits = [
+      { r: 2.15, tilt: 1.05, roll: 0.22, speed: 0.22, n: 2 },
+      { r: 3.0, tilt: 1.14, roll: -0.16, speed: -0.15, n: 3 },
+      { r: 3.9, tilt: 1.22, roll: 0.08, speed: 0.1, n: 4 },
+    ];
+    const coins = [];
+    let gi = 0;
+    orbits.forEach((o) => {
+      const plane = new THREE.Group();
+      plane.rotation.set(o.tilt, 0, o.roll);
+      root.add(plane);
+      const pts = [];
+      for (let i = 0; i < 256; i++) { const a = (i / 256) * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * o.r, Math.sin(a) * o.r, 0)); }
+      plane.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xe7b94f, transparent: true, opacity: 0.16 })));
+      o.plane = plane;
+      for (let i = 0; i < o.n; i++) {
+        const tex = glyphTexture(glyphs[gi++ % glyphs.length]);
+        const face = gold({ bumpMap: tex, bumpScale: 4, roughnessMap: tex, roughness: 0.2 });
+        const coin = new THREE.Mesh(coinGeo, [edgeMat, face, face]);
+        root.add(coin);
+        coins.push({ coin, o, a: (i / o.n) * Math.PI * 2 + o.r, wob: Math.random() * 6 });
+      }
+    });
+
+    // --- gold dust
+    const N = isMobile ? 160 : 360;
+    const dust = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      const r = 1.6 + Math.random() * 3.6, a = Math.random() * Math.PI * 2;
+      dust.set([Math.cos(a) * r, (Math.random() - 0.5) * 2.6, Math.sin(a) * r], i * 3);
+    }
+    const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute('position', new THREE.BufferAttribute(dust, 3));
+    const points = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xffd98a, size: 0.035, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true }));
+    root.add(points);
+
+    const v = new THREE.Vector3(), q = new THREE.Quaternion(), flip = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+    let tiltY = 0, tiltX = 0;
+    stage.update = (t, dt) => {
+      const sp = reduced ? 0.35 : 1;
+      tiltY += (pointer.sx * 0.35 - tiltY) * 0.06;
+      tiltX += (pointer.sy * 0.12 - tiltX) * 0.06;
+      root.rotation.set(0.08 + tiltX, tiltY, 0);
+      emblem.rotation.y = Math.sin(t * 0.45) * 0.55;
+      emblem.position.y = 0.15 + Math.sin(t * 0.9) * 0.05;
+      gem.rotation.y = t * 1.2;
+      halo.material.opacity = 0.85 + Math.sin(t * 1.3) * 0.15;
+      points.rotation.y = t * 0.03 * sp;
+      for (const c of coins) {
+        c.a += c.o.speed * dt * sp;
+        v.set(Math.cos(c.a) * c.o.r, Math.sin(c.a) * c.o.r, 0).applyEuler(c.o.plane.rotation);
+        c.coin.position.copy(v);
+        // face the camera, with a slow individual wobble so the gold catches the light
+        c.coin.quaternion.copy(root.quaternion).invert().multiply(stage.camera.quaternion).multiply(flip);
+        q.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.sin(t * 0.8 + c.wob) * 0.5);
+        c.coin.quaternion.multiply(q);
+      }
+    };
+    stage.camera.position.set(0, 0.5, 8.4);
+    stage.camera.lookAt(0, 0.05, 0);
+  },
   ringSmall(stage) {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.22, 48, 160), gold({ roughness: 0.15 }));
     ring.scale.z = 1.3;
@@ -217,6 +319,24 @@ const BUILDERS = {
     stage.camera.position.z = 4.2;
   },
 };
+
+/* small token coin face (bump map): reeded rim + raised glyph */
+function glyphTexture(glyph) {
+  const s = 256, c = document.createElement('canvas'); c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.fillStyle = '#7a7a7a'; x.fillRect(0, 0, s, s);
+  x.strokeStyle = '#d8d8d8'; x.lineWidth = 14; x.beginPath(); x.arc(128, 128, 112, 0, Math.PI * 2); x.stroke();
+  x.strokeStyle = '#4a4a4a'; x.lineWidth = 4; x.beginPath(); x.arc(128, 128, 96, 0, Math.PI * 2); x.stroke();
+  for (let i = 0; i < 48; i++) { x.save(); x.translate(128, 128); x.rotate((i / 48) * Math.PI * 2); x.fillStyle = '#aaa'; x.fillRect(-2, -88, 4, 8); x.restore(); }
+  x.fillStyle = '#f2f2f2'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = `700 ${glyph.length > 1 ? 62 : 110}px Inter, Arial, sans-serif`;
+  x.fillText(glyph, 128, 134);
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  t.center.set(0.5, 0.5);
+  t.rotation = Math.PI / 2;
+  return t;
+}
 
 /* procedural coin face: rings, rays, a globe-like grid and the LWAY mark */
 function coinFaceTexture() {
