@@ -71,7 +71,7 @@
               <a href="https://github.com/" target="_blank" rel="noopener" class="btn btn--ghost">View on GitHub <i>↗</i></a>
             </div>
             <div class="hero__meta reveal">
-              <div><b data-count="9">0</b><span>Live MCP tools</span></div>
+              <div><b data-count="11">0</b><span>Live MCP tools</span></div>
               <div><b data-count="7">0</b><span>EVM chains</span></div>
               <div><b>MIT</b><span>License</span></div>
             </div>
@@ -170,8 +170,8 @@
           <h2 class="title title--left">Plug into any agent in <span class="fade">30 seconds</span></h2>
           <p class="sec-sub sec-sub--left">Drop Mandate into your MCP client config. Your agent picks up the tools on its own: no SDK, no glue code.</p>
           <div class="install__cmd">
-            <code>npx -y mandate-mcp</code>
-            <button class="copy" data-copy="npx -y mandate-mcp" aria-label="Copy command">Copy</button>
+            <code>npx -y mandate-mcp-server</code>
+            <button class="copy" data-copy="npx -y mandate-mcp-server" aria-label="Copy command">Copy</button>
           </div>
           <a href="docs.html#quickstart" class="link-arrow install__docs">Read the docs <i>→</i></a>
         </div>
@@ -182,7 +182,7 @@
   <span class="t-k">"mcpServers"</span>: <span class="t-p">{</span>
     <span class="t-k">"mandate"</span>: <span class="t-p">{</span>
       <span class="t-k">"command"</span>: <span class="t-s">"npx"</span>,
-      <span class="t-k">"args"</span>: [<span class="t-s">"-y"</span>, <span class="t-s">"mandate-mcp"</span>],
+      <span class="t-k">"args"</span>: [<span class="t-s">"-y"</span>, <span class="t-s">"mandate-mcp-server"</span>],
       <span class="t-k">"env"</span>: <span class="t-p">{</span>
         <span class="t-k">"MANDATE_DAILY_LIMIT_USD"</span>: <span class="t-s">"50"</span>,
         <span class="t-k">"MANDATE_ALLOWLIST"</span>: <span class="t-s">"uniswap,aave"</span>,
@@ -434,9 +434,9 @@
 
         <div class="ascent-stats reveal">
           <div><b>Phase 2</b><span>of 7 in progress</span></div>
-          <div><b data-count="11">0</b><span>milestones shipped</span></div>
+          <div><b data-count="13">0</b><span>milestones shipped</span></div>
           <div><b>Crypto + Stocks</b><span>one mandate engine</span></div>
-          <div class="ascent-stats__bar"><span>Overall progress</span><i><em style="--p:26%"></em></i><small>26%</small></div>
+          <div class="ascent-stats__bar"><span>Overall progress</span><i><em style="--p:31%"></em></i><small>31%</small></div>
         </div>
 
         <div class="ascent" id="ascent">
@@ -458,7 +458,7 @@
               <header><em>Q4 2026</em><span class="st st--now">In progress</span></header>
               <h3>Guardrails</h3>
               <p>Make agents safe to trust with money before they can touch it.</p>
-              <ul><li class="ok">Policy engine with persistent ledger</li><li class="ok">Token risk scanner &amp; address reputation</li><li class="ok">x402 payment quotes</li><li class="ok">Docs, live playground, policy simulator</li><li>Swap quotes &amp; fork simulation</li><li>npm publish · official MCP registry · Smithery</li></ul>
+              <ul><li class="ok">Policy engine with persistent ledger</li><li class="ok">Token risk scanner &amp; address reputation</li><li class="ok">x402 payment quotes</li><li class="ok">Docs, live playground, policy simulator</li><li class="ok">Guarded swap quotes (DEX aggregator)</li><li class="ok">Pre-sign transaction simulation</li><li>npm publish · official MCP registry · Smithery</li></ul>
               <div class="stage__kpi"><span>KPI</span>1,000 GitHub stars · 500 weekly installs</div>
             </div>
           </article>

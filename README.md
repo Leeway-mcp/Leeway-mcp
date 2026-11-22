@@ -6,7 +6,7 @@
 
 An open-source [Model Context Protocol](https://modelcontextprotocol.io) server that gives Claude, Cursor and any AI agent safe, policy-guarded access to on-chain value.
 
-`market data` · `wallets` · `risk intelligence` · `x402 payments` · `policy engine`
+`market data` · `wallets` · `risk intelligence` · `guarded swaps` · `tx simulation` · `x402 payments` · `policy engine`
 
 </div>
 
@@ -28,12 +28,16 @@ Mandate puts a **policy engine** between the agent and the money. The agent gets
 | `get_balance` | Native balance of any address, valued in USD |
 | `scan_token` | Honeypot, mint, hidden-owner, tax, blacklist, proxy, holder and LP-lock checks, giving a 0–100 risk score |
 | `check_address` | Phishing / drainer / sanctions reputation of an address |
+| `swap_quote` | Best DEX route (KyberSwap aggregator) with price impact, gas share, a risk scan of the token bought and the policy decision. With `sender`, builds the router calldata and simulates it. Verdict: `OK_TO_SWAP` / `REVIEW` / `NEEDS_APPROVAL` / `DO_NOT_SWAP` |
+| `simulate_tx` | Dry-runs any transaction on live state (`eth_simulateV1`): assets out/in with USD values, approvals (flags unlimited and wallet-to-wallet), NFTs leaving, revert reason, gas, counterparty reputation. Verdict: `SAFE_TO_SIGN` / `REVIEW` / `NEEDS_APPROVAL` / `DO_NOT_SIGN` / `WILL_REVERT` |
 | `policy_check` | Asks the policy engine whether a spend is allowed |
 | `x402_quote` | Reads the price of an HTTP 402 (x402) paywalled resource and runs the policy check |
 | `spending_report` | Today's spend, remaining budget, active limits |
 
 Chains: `ethereum`, `base`, `arbitrum`, `optimism`, `polygon`, `bsc`, `avalanche`.
-Data sources: CoinGecko, PublicNode RPC and GoPlus Security. All free, no API keys needed.
+Data sources: CoinGecko and DefiLlama (prices), PublicNode RPC, GoPlus Security, KyberSwap aggregator. All free, no API keys needed.
+
+The guard core (`server/src/onchain.js`) is isomorphic: the landing-page playground runs a generated copy of the same file (`npm run sync-site`), and `npm test` fails if the two drift apart.
 
 ## Quick start
 
@@ -63,7 +67,7 @@ Add it to **Claude Desktop** (`claude_desktop_config.json`):
 
 **Claude Code:** `claude mcp add mandate -- node /absolute/path/to/mandate-mcp/server/src/index.js`
 
-After `npm publish`, this becomes `npx -y mandate-mcp`.
+After `npm publish`, this becomes `npx -y mandate-mcp-server`.
 
 ## Policy configuration
 
@@ -84,13 +88,21 @@ After `npm publish`, this becomes `npx -y mandate-mcp`.
 >
 > **Agent** → `scan_token` → *risk 91/100: owner can mint, 12% sell tax, LP unlocked.* "I would not buy this."
 
+## Publishing (maintainers)
+
+1. Replace `YOUR_GITHUB` in `server/package.json` (`mcpName`, `repository`) and `server/server.json`.
+2. `cd server && npm test && npm publish --access public` (package name: `mandate-mcp-server`; `mandate-mcp` is taken on npm).
+3. Official MCP Registry: `mcp-publisher login github`, then `mcp-publisher publish` from `server/`.
+
 ## Roadmap
 
 - [x] Market, wallet and gas tools on 7 EVM chains
 - [x] Risk scanner and address reputation
 - [x] Policy engine with a persistent daily ledger
 - [x] x402 price quotes
-- [ ] Swap quotes and fork simulation
+- [x] Guarded swap quotes (DEX aggregator + impact, risk and policy checks)
+- [x] Pre-sign transaction simulation (asset changes, approvals, reverts)
+- [ ] npm publish · official MCP Registry · Smithery (manifests ready: `server/server.json`, `mcpName`)
 - [ ] Policy-bound agent smart wallets (ERC-4337) with execution
 - [ ] x402 payment settlement
 - [ ] Human approval via Telegram

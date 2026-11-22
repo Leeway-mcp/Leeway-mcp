@@ -24,6 +24,13 @@ const calls = [
   ['get_balance', { address: VITALIK, chain: 'ethereum' }],
   ['scan_token', { address: USDC_BASE, chain: 'base' }],
   ['check_address', { address: VITALIK }],
+  ['swap_quote', { chain: 'base', sell: 'ETH', buy: 'USDC', amount: '0.05', sender: VITALIK, fund_sender: true }],
+  ['swap_quote', { chain: 'ethereum', sell: 'USDC', buy: '0x6982508145454Ce325dDbE47a25d4ec3d2311933', amount: '30' }],
+  // unlimited USDC approval to a plain wallet: the classic drainer pattern
+  ['simulate_tx', { chain: 'base', from: VITALIK, to: USDC_BASE, data: '0x095ea7b30000000000000000000000002222222222222222222222222222222222222222ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff' }],
+  ['simulate_tx', { chain: 'ethereum', from: VITALIK, to: '0x2222222222222222222222222222222222222222', value: '0.01' }],
+  // USDC transfer from an empty wallet: must report WILL_REVERT with the reason
+  ['simulate_tx', { chain: 'base', from: '0x7d3a1b2c9e8f4a5b6c7d8e9f0a1b2c3d4e5f6a7b', to: USDC_BASE, data: '0xa9059cbb000000000000000000000000222222222222222222222222222222222222222200000000000000000000000000000000000000000000000000000000004c4b40' }],
   ['policy_check', { value_usd: 0.02, merchant: 'api.example.com' }],
   ['policy_check', { value_usd: 40, merchant: 'uniswap' }],
   ['policy_check', { value_usd: 900, merchant: 'unknown-dex' }],
@@ -35,7 +42,7 @@ for (const [name, args] of calls) {
   try {
     const r = await client.callTool({ name, arguments: args });
     const text = r.content?.[0]?.text ?? '';
-    console.log(`\n▸ ${name} ${JSON.stringify(args)} ${r.isError ? '(isError)' : ''}\n${text.slice(0, 600)}`);
+    console.log(`\n▸ ${name} ${JSON.stringify(args)} ${r.isError ? '(isError)' : ''}\n${text.slice(0, process.env.FULL ? 4000 : 600)}`);
   } catch (e) {
     // invalid input is rejected by schema validation: expected for the bad-address case
     console.log(`\n▸ ${name} threw: ${e.message.slice(0, 200)}`);

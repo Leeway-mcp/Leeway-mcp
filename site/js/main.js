@@ -155,11 +155,11 @@ const TOOLS = {
     ['holder_concentration', 'Top-holder share and clustering of linked wallets.', 'read'],
     ['check_address', 'Sanctions, phishing and drainer reputation lookup.', 'read'],
     ['liquidity_lock', 'LP lock status, unlock dates and rug probability.', 'read'],
-    ['explain_tx', 'Plain-English simulation of what a transaction will do.', 'read'],
+    ['approval_audit', 'Every open allowance a wallet has granted, riskiest first.', 'read'],
   ],
   trade: [
-    ['quote_swap', 'Best route across DEX aggregators, including price impact.', 'read'],
-    ['simulate_swap', 'Fork simulation with exact output and state diff.', 'read'],
+    ['swap_quote', 'Best DEX route with price impact, token risk and policy checks built in.', 'read'],
+    ['simulate_tx', 'Dry-run any transaction on live state: assets out/in, approvals, revert reason.', 'read'],
     ['execute_swap', 'Policy-checked execution with slippage guard.', 'write'],
     ['bridge_quote', 'Cross-chain routes compared on cost and time.', 'read'],
     ['limit_order', 'Place intent-based limit orders with expiry.', 'write'],
@@ -175,7 +175,7 @@ const TOOLS = {
   ],
 };
 // tools shipped in server/src/index.js today; the rest are on the roadmap
-const LIVE = new Set(['get_price', 'trending_tokens', 'get_gas', 'get_balance', 'scan_token', 'check_address', 'policy_check', 'x402_quote', 'spending_report']);
+const LIVE = new Set(['get_price', 'trending_tokens', 'get_gas', 'get_balance', 'scan_token', 'check_address', 'swap_quote', 'simulate_tx', 'policy_check', 'x402_quote', 'spending_report']);
 function renderTools(cat) {
   $('#toolList').innerHTML = TOOLS[cat].map(([n, d, t], i) =>
     `<div class="tool-item" style="animation-delay:${i * 0.05}s"><div class="tool-item__head"><code>${n}()</code>${LIVE.has(n) ? '<em class="live">● live</em>' : '<em>soon</em>'}</div><p>${d}</p><small class="${t === 'write' ? 'w' : ''}">${t === 'write' ? 'write · policy-guarded' : 'read-only'}</small></div>`).join('');
@@ -221,7 +221,7 @@ if (!reduced && matchMedia('(hover: hover)').matches) {
 /* ---------- hero live feed ---------- */
 (() => {
   const r = (a, b) => Math.floor(a + Math.random() * (b - a));
-  const tools = ['get_price', 'scan_token', 'get_gas', 'check_address', 'get_balance', 'x402_quote', 'trending_tokens'];
+  const tools = ['get_price', 'scan_token', 'get_gas', 'check_address', 'get_balance', 'x402_quote', 'trending_tokens', 'swap_quote', 'simulate_tx'];
   const merchants = ['meteo.xyz', 'newsapi.ai', 'chainstats.io', 'llm-router.dev', 'maps.agent'];
   const feeds = [
     () => [`agent#${r(1000, 9999)} → paid <b>0.0${r(1, 9)} USDC</b>`, 'x402', ''],
@@ -310,10 +310,10 @@ const DEMOS = [
   ],
   [
     ['user', 'Swap 0.5 ETH to USDC at the best rate'],
-    ['tool', '→ <b>quote_swap</b>({ from: "ETH", to: "USDC", amount: 0.5 })'],
-    ['ok', '✓ best route: Uniswap v4 → 1,741.82 USDC · impact 0.03%'],
-    ['tool', '→ <b>simulate_swap</b>({ route: "uni-v4", slippage: 0.3 })'],
-    ['ok', '✓ simulation passed · min out 1,736.6 USDC · gas $0.41'],
+    ['tool', '→ <b>swap_quote</b>({ chain: "base", sell: "ETH", buy: "USDC", amount: "0.5" })'],
+    ['ok', '✓ best route via Uniswap v4 → 1,741.82 USDC · impact 0.03% · token curated'],
+    ['tool', '→ <b>simulate_tx</b>({ to: "router", value: "0.5", data: "0xe21f…" })'],
+    ['ok', '✓ −0.5 ETH · +1,741.8 USDC · no approvals · gas $0.004'],
     ['tool', '→ policy.check({ value_usd: 1741, daily_limit: 50 })'],
     ['warn', '⚠ above daily limit · approval requested via Telegram'],
     ['ok', '✓ approved by owner · 0x91c…e2 confirmed in block 21,904,113'],

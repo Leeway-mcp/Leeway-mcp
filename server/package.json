@@ -1,19 +1,49 @@
 {
-  "name": "mandate-mcp",
-  "version": "0.1.0",
-  "description": "Open-source MCP server that gives AI agents safe, policy-guarded access to on-chain value: prices, wallets, risk scans, gas and x402 payment quotes.",
+  "name": "mandate-mcp-server",
+  "version": "0.2.0",
+  "mcpName": "io.github.YOUR_GITHUB/mandate-mcp",
+  "description": "Open-source MCP server that gives AI agents safe, policy-guarded access to on-chain value: prices, wallets, risk scans, guarded swap quotes, transaction simulation, gas and x402 payment quotes.",
   "type": "module",
   "main": "src/index.js",
-  "bin": { "mandate-mcp": "src/index.js" },
-  "files": ["src"],
+  "bin": {
+    "mandate-mcp": "src/index.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "server.json"
+  ],
   "scripts": {
     "start": "node src/index.js",
-    "test": "node test/smoke.js",
+    "test": "node scripts/sync-site.mjs --check && node test/smoke.js",
+    "sync-site": "node scripts/sync-site.mjs",
     "inspect": "npx @modelcontextprotocol/inspector node src/index.js"
   },
-  "keywords": ["mcp", "model-context-protocol", "ai-agents", "crypto", "x402", "web3", "claude", "defi", "security"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "crypto",
+    "x402",
+    "web3",
+    "claude",
+    "defi",
+    "security",
+    "swap",
+    "simulation",
+    "transaction-simulation",
+    "wallet-security"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_GITHUB/mandate-mcp.git",
+    "directory": "server"
+  },
+  "homepage": "https://github.com/YOUR_GITHUB/mandate-mcp#readme",
   "license": "MIT",
-  "engines": { "node": ">=18.17" },
+  "engines": {
+    "node": ">=18.17"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
     "zod": "^4.6.7"

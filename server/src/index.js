@@ -5,8 +5,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import * as data from './data.js';
 import { evaluate, report, policy } from './policy.js';
+import { scoreToken, simulateTx, swapQuote, parseUnits } from './onchain.js';
 
-const server = new McpServer({ name: 'mandate-mcp', version: '0.1.0' });
+const server = new McpServer({ name: 'mandate-mcp', version: '0.2.0' });
+const ctx = { CHAINS: data.CHAINS, rpc: data.rpc, getJSON: data.getJSON, tokenSecurity: data.tokenSecurity, addressSecurity: data.addressSecurity, evaluate };
 
 const ok = (obj) => ({ content: [{ type: 'text', text: JSON.stringify(obj, null, 2) }] });
 const fail = (err) => ({ isError: true, content: [{ type: 'text', text: `Error: ${err?.message ?? err}` }] });
@@ -83,36 +85,42 @@ server.registerTool('scan_token', {
 }, safe(async ({ address, chain }) => {
   const s = await data.tokenSecurity(chain, address);
   if (!s) return { address, chain, verdict: 'unknown', note: 'No security data. Treat it as high risk.' };
-  const flags = [];
-  let score = 0;
-  const hit = (cond, pts, msg) => { if (cond) { score += pts; flags.push(msg); } };
-  const yes = (v) => v === '1';
-  hit(yes(s.is_honeypot), 60, 'honeypot: tokens cannot be sold');
-  hit(yes(s.cannot_sell_all), 25, 'cannot sell entire balance');
-  hit(yes(s.is_mintable), 15, 'owner can mint new supply');
-  hit(yes(s.hidden_owner), 15, 'hidden owner');
-  hit(yes(s.owner_change_balance), 25, 'owner can modify balances');
-  hit(yes(s.selfdestruct), 15, 'contract can self-destruct');
-  hit(yes(s.is_blacklisted), 10, 'has blacklist function');
-  hit(yes(s.transfer_pausable), 10, 'transfers can be paused');
-  hit(yes(s.is_proxy), 8, 'upgradeable proxy');
-  hit(s.is_open_source === '0', 20, 'contract source not verified');
-  const buyTax = Number(s.buy_tax || 0) * 100, sellTax = Number(s.sell_tax || 0) * 100;
-  hit(sellTax > 10 || buyTax > 10, 15, `high tax (buy ${buyTax.toFixed(1)}% / sell ${sellTax.toFixed(1)}%)`);
-  const top10 = (s.holders || []).slice(0, 10).reduce((a, h) => a + Number(h.percent || 0), 0) * 100;
-  hit(top10 > 60, 12, `top 10 holders own ${top10.toFixed(1)}%`);
-  const lpLocked = (s.lp_holders || []).reduce((a, h) => a + (h.is_locked ? Number(h.percent || 0) : 0), 0) * 100;
-  hit((s.lp_holders || []).length && lpLocked < 50, 10, `only ${lpLocked.toFixed(0)}% of LP locked`);
-  score = Math.min(100, score);
-  const verdict = score >= 60 ? 'DANGEROUS: do not buy' : score >= 30 ? 'CAUTION: elevated risk' : 'No major red flags found';
   return {
     token: { name: s.token_name, symbol: s.token_symbol, address, chain, holders: Number(s.holder_count || 0), total_supply: s.total_supply },
-    risk_score: score, verdict, flags,
-    taxes: { buy_pct: round(buyTax, 2), sell_pct: round(sellTax, 2) },
-    top10_holders_pct: round(top10, 2), lp_locked_pct: round(lpLocked, 1),
+    ...scoreToken(s),
     source: 'GoPlus Security',
   };
 }));
+
+/* ---------------- trading & pre-flight ---------------- */
+server.registerTool('swap_quote', {
+  title: 'Guarded swap quote',
+  description: 'Best-route swap quote across DEXs (KyberSwap aggregator) with Mandate checks built in: price impact, gas share, a risk scan of the token being bought and the policy decision. Pass `sender` to also build the exact router transaction and simulate it on live chain state. Returns a verdict (OK_TO_SWAP, REVIEW, NEEDS_APPROVAL, DO_NOT_SWAP). Never signs or sends.',
+  inputSchema: {
+    chain: Chain,
+    sell: z.string().min(1).describe('Token to sell: symbol (ETH, USDC, WETH…) or contract address'),
+    buy: z.string().min(1).describe('Token to buy: symbol or contract address'),
+    amount: z.string().regex(/^\d+(\.\d+)?$/, 'must be a decimal number, e.g. "0.5"').describe('Amount of `sell` in whole units, e.g. "0.25"'),
+    slippage_bps: z.number().int().min(1).max(500).default(50).describe('Max slippage in basis points (50 = 0.5%)'),
+    sender: Address.optional().describe('Wallet that would swap. Enables calldata build + simulation.'),
+    fund_sender: z.boolean().default(false).describe('Simulate as if the sender held enough native token (what-if mode, native sells only)'),
+  },
+  annotations: READ,
+}, safe(({ chain, sell, buy, amount, slippage_bps, sender, fund_sender }) => swapQuote(ctx, { chain, sell, buy, amount, slippageBps: slippage_bps, sender, fundSender: fund_sender })));
+
+server.registerTool('simulate_tx', {
+  title: 'Simulate a transaction before signing',
+  description: 'Dry-runs any EVM transaction against live chain state and reports exactly what it would do: assets leaving and entering the sender wallet with USD values, approvals granted (flags unlimited and wallet-to-wallet approvals), NFTs leaving, revert reason, gas cost, counterparty reputation and the policy decision. Returns SAFE_TO_SIGN, REVIEW, NEEDS_APPROVAL, DO_NOT_SIGN or WILL_REVERT. Agents should call this before signing anything they did not construct themselves.',
+  inputSchema: {
+    chain: Chain,
+    from: Address.describe('Sender (the agent wallet)'),
+    to: Address.describe('Destination contract or wallet'),
+    data: z.string().regex(/^0x([0-9a-fA-F]{2})*$/, 'must be 0x-prefixed hex calldata').default('0x').describe('Calldata, "0x" for a plain transfer'),
+    value: z.string().regex(/^\d+(\.\d+)?$/, 'must be a decimal number').default('0').describe('Native token value in whole units, e.g. "0.01" ETH'),
+    fund_sender: z.boolean().default(false).describe('Give the sender hypothetical native balance for the simulation (what-if mode)'),
+  },
+  annotations: READ,
+}, safe(({ chain, from, to, data: calldata, value, fund_sender }) => simulateTx(ctx, { chain, from, to, data: calldata, valueWei: parseUnits(value, 18), fundSender: fund_sender })));
 
 server.registerTool('check_address', {
   title: 'Check address reputation',
@@ -182,4 +190,4 @@ function round(v, d = 2) { return v == null || Number.isNaN(v) ? null : Math.rou
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error('[mandate-mcp] ready · tools: get_price, trending_tokens, get_gas, get_balance, scan_token, check_address, policy_check, x402_quote, spending_report');
+console.error('[mandate-mcp] ready · tools: get_price, trending_tokens, get_gas, get_balance, scan_token, check_address, swap_quote, simulate_tx, policy_check, x402_quote, spending_report');

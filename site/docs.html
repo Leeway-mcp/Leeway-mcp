@@ -60,6 +60,8 @@
         <a href="#t-get_balance" class="sub">get_balance</a>
         <a href="#t-scan_token" class="sub">scan_token</a>
         <a href="#t-check_address" class="sub">check_address</a>
+        <a href="#t-swap_quote" class="sub">swap_quote</a>
+        <a href="#t-simulate_tx" class="sub">simulate_tx</a>
         <a href="#t-policy_check" class="sub">policy_check</a>
         <a href="#t-x402_quote" class="sub">x402_quote</a>
         <a href="#t-spending_report" class="sub">spending_report</a>
@@ -87,7 +89,7 @@
         <p class="lead">Mandate is an open-source <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> server that gives AI agents safe, policy-guarded access to on-chain value. Plug it into Claude, Cursor or any MCP client, and your agent can read markets, check wallets, scan tokens for scams and price x402 payments. Every spend goes through a policy engine that you configure, and nothing the agent says can change it.</p>
         <div class="doc-cards">
           <a href="#quickstart" class="doc-card"><b>Quick start →</b><span>Install and connect your agent in under a minute.</span></a>
-          <a href="#tools" class="doc-card"><b>Tool reference →</b><span>All 9 tools with parameters and real responses.</span></a>
+          <a href="#tools" class="doc-card"><b>Tool reference →</b><span>All 11 tools with parameters and real responses.</span></a>
           <a href="#policy" class="doc-card"><b>Policy engine →</b><span>How allow / approve / deny decisions are made.</span></a>
         </div>
         <figure class="shot">
@@ -196,7 +198,7 @@ npm install
 
 <span class="c"># 3. verify: spawns the server and calls every tool against live data</span>
 npm test</code></pre></div>
-        <p>You should see all nine tools respond, ending with <code>all calls completed</code>:</p>
+        <p>You should see all eleven tools respond, ending with <code>all calls completed</code>:</p>
         <figure class="shot shot--tight">
           <img src="docs/img/npm-test.jpg" alt="Terminal output of npm test showing live prices, gas, balances and a token risk scan" loading="lazy" />
           <figcaption>Real output of <code>npm test</code>: live ETH/TAO/BTC prices, Base gas, a wallet balance, a USDC risk scan, and input validation rejecting a bad address.</figcaption>
@@ -206,7 +208,7 @@ npm test</code></pre></div>
 
       <section id="clients" class="doc-sec">
         <h2>Client setup</h2>
-        <p>Use the <strong>absolute path</strong> to <code>server/src/index.js</code>. After Mandate is published to npm, replace <code>"command": "node", "args": ["…/index.js"]</code> with <code>"command": "npx", "args": ["-y", "mandate-mcp"]</code>.</p>
+        <p>Use the <strong>absolute path</strong> to <code>server/src/index.js</code>. After Mandate is published to npm, replace <code>"command": "node", "args": ["…/index.js"]</code> with <code>"command": "npx", "args": ["-y", "mandate-mcp-server"]</code>.</p>
         <div class="tabs" data-tabs>
           <div class="tabs__head" role="tablist">
             <button role="tab" class="is-on" data-tab="desktop">Claude Desktop</button>
@@ -229,7 +231,7 @@ npm test</code></pre></div>
     }
   }
 }</code></pre></div>
-            <p>Restart the app. "mandate" with 9 tools appears in the tools menu.</p>
+            <p>Restart the app. "mandate" with 11 tools appears in the tools menu.</p>
           </div>
           <div class="tabs__panel" data-panel="code">
             <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
@@ -320,6 +322,57 @@ npm test</code></pre></div>
           <p>Reputation check for an address: phishing, drainer contracts, sanctions, mixers, honeypot deployers and other malicious activity. Run it before sending funds anywhere new.</p>
           <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>address</code> <i>required</i></td><td>0x…</td><td>Address to check</td></tr></tbody></table>
           <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"address"</span>: <span class="s">"0xd8dA…6045"</span>, <span class="k">"flagged"</span>: false, <span class="k">"flags"</span>: [], <span class="k">"source"</span>: <span class="s">"GoPlus Security"</span> }</code></pre></div>
+        </article>
+
+        <article class="tool-doc" id="t-swap_quote">
+          <header><h3><code>swap_quote</code></h3><span class="pill pill--ro">read-only</span><span class="pill">trading</span><span class="pill pill--gold">new in 0.2</span></header>
+          <p>Best-route swap quote across DEXs from the KyberSwap aggregator, with Mandate's checks built in: price impact, gas as a share of the trade, a risk scan of the token being bought (anything outside a curated list of majors goes through the same scoring as <code>scan_token</code>) and the policy decision. Pass <code>sender</code> and Mandate also builds the exact router transaction and runs it through <code>simulate_tx</code>, so the agent sees what it would receive before anything is signed.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody><tr><td><code>chain</code></td><td>enum</td><td>Default <code>ethereum</code></td></tr>
+            <tr><td><code>sell</code> <i>required</i></td><td>string</td><td>Symbol (<code>ETH</code>, <code>USDC</code>, <code>WETH</code>…) or contract address</td></tr>
+            <tr><td><code>buy</code> <i>required</i></td><td>string</td><td>Symbol or contract address</td></tr>
+            <tr><td><code>amount</code> <i>required</i></td><td>decimal string</td><td>Amount of <code>sell</code> in whole units, e.g. <code>"0.25"</code></td></tr>
+            <tr><td><code>slippage_bps</code></td><td>int 1–500</td><td>Default <code>50</code> (0.5%). Sets <code>min_out</code></td></tr>
+            <tr><td><code>sender</code></td><td>0x…</td><td>Wallet that would swap. Enables calldata build + simulation</td></tr>
+            <tr><td><code>fund_sender</code></td><td>boolean</td><td>What-if mode: simulate as if the sender held enough native token</td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response (trimmed)</em></div><pre><code>{ <span class="k">"verdict"</span>: <span class="s">"NEEDS_APPROVAL"</span>,
+  <span class="k">"sell"</span>: { <span class="k">"symbol"</span>: <span class="s">"ETH"</span>, <span class="k">"amount"</span>: <span class="s">"0.05"</span> },
+  <span class="k">"buy"</span>: { <span class="k">"symbol"</span>: <span class="s">"USDC"</span>, <span class="k">"amount_out"</span>: <span class="s">"85.495379"</span>, <span class="k">"min_out"</span>: <span class="s">"85.067902"</span> },
+  <span class="k">"price_impact_pct"</span>: -0.048, <span class="k">"gas_usd"</span>: 0.0049,
+  <span class="k">"route"</span>: { <span class="k">"aggregator"</span>: <span class="s">"KyberSwap"</span>, <span class="k">"exchanges"</span>: [<span class="s">"lunarbase"</span>], <span class="k">"max_hops"</span>: 1 },
+  <span class="k">"checks"</span>: [
+    { <span class="k">"check"</span>: <span class="s">"price_impact"</span>, <span class="k">"status"</span>: <span class="s">"pass"</span>, <span class="k">"detail"</span>: <span class="s">"-0.048% (healthy)"</span> },
+    { <span class="k">"check"</span>: <span class="s">"token_risk"</span>, <span class="k">"status"</span>: <span class="s">"pass"</span>, <span class="k">"detail"</span>: <span class="s">"USDC is a curated asset"</span> },
+    { <span class="k">"check"</span>: <span class="s">"policy"</span>, <span class="k">"status"</span>: <span class="s">"warn"</span>, <span class="k">"detail"</span>: <span class="s">"needs_approval: above per-transaction limit of $25"</span> },
+    { <span class="k">"check"</span>: <span class="s">"simulation"</span>, <span class="k">"status"</span>: <span class="s">"pass"</span>, <span class="k">"detail"</span>: <span class="s">"succeeds on block 60775860, receives 85.495379 USDC"</span> } ] }</code></pre></div>
+          <p>Verdicts: <code>OK_TO_SWAP</code> (every check passes), <code>REVIEW</code> (warnings, e.g. thin liquidity or a token with elevated risk), <code>NEEDS_APPROVAL</code> (policy wants a human), <code>DO_NOT_SWAP</code> (any check fails: impact above 5%, risky token, policy deny, or the simulation reverts).</p>
+          <p class="ask">Ask: <i>"Quote 0.5 ETH to USDC on Base and tell me if it's safe to do."</i></p>
+        </article>
+
+        <article class="tool-doc" id="t-simulate_tx">
+          <header><h3><code>simulate_tx</code></h3><span class="pill pill--ro">read-only</span><span class="pill">risk</span><span class="pill pill--gold">new in 0.2</span></header>
+          <p>Dry-runs any EVM transaction against live chain state (<code>eth_simulateV1</code> with transfer tracing) and reports what it would actually do to the sender: assets leaving and entering with USD values, approvals granted, NFTs leaving, the revert reason, gas cost, counterparty reputation and the policy decision. This is the answer to the most common way agents and people lose funds: signing calldata they did not write.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody><tr><td><code>chain</code></td><td>enum</td><td>Default <code>ethereum</code></td></tr>
+            <tr><td><code>from</code> <i>required</i></td><td>0x…</td><td>Sender (the agent wallet)</td></tr>
+            <tr><td><code>to</code> <i>required</i></td><td>0x…</td><td>Destination contract or wallet</td></tr>
+            <tr><td><code>data</code></td><td>hex</td><td>Calldata. Default <code>"0x"</code> (plain transfer)</td></tr>
+            <tr><td><code>value</code></td><td>decimal string</td><td>Native value in whole units, e.g. <code>"0.01"</code></td></tr>
+            <tr><td><code>fund_sender</code></td><td>boolean</td><td>What-if mode: hypothetical native balance for the simulation</td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response · unlimited USDC approval to a plain wallet</em></div><pre><code>{ <span class="k">"verdict"</span>: <span class="s">"DO_NOT_SIGN"</span>, <span class="k">"status"</span>: <span class="s">"success"</span>, <span class="k">"method"</span>: <span class="s">"approve(address,uint256)"</span>,
+  <span class="k">"asset_changes"</span>: [],
+  <span class="k">"approvals"</span>: [{ <span class="k">"symbol"</span>: <span class="s">"USDC"</span>, <span class="k">"spender"</span>: <span class="s">"0x2222…2222"</span>, <span class="k">"amount"</span>: <span class="s">"unlimited"</span>, <span class="k">"spender_is_contract"</span>: false }],
+  <span class="k">"warnings"</span>: [{ <span class="k">"severity"</span>: <span class="s">"high"</span>, <span class="k">"message"</span>: <span class="s">"unlimited USDC approval to a wallet (not a contract) 0x2222…2222"</span> }],
+  <span class="k">"gas"</span>: { <span class="k">"used"</span>: 55785, <span class="k">"cost_usd"</span>: 0.0006 } }</code></pre></div>
+          <table class="params"><thead><tr><th>Verdict</th><th>When</th></tr></thead>
+            <tbody><tr><td><code>SAFE_TO_SIGN</code></td><td>Succeeds, no warnings, policy allows</td></tr>
+            <tr><td><code>REVIEW</code></td><td>Medium warnings: unlimited approval to a contract, NFT leaving, unpriced asset</td></tr>
+            <tr><td><code>NEEDS_APPROVAL</code></td><td>Policy asks for a human (over a limit, or value that could not be priced)</td></tr>
+            <tr><td><code>DO_NOT_SIGN</code></td><td>High warnings: approval to a plain wallet, <code>setApprovalForAll</code>, flagged counterparty, or policy deny</td></tr>
+            <tr><td><code>WILL_REVERT</code></td><td>The transaction fails on-chain and would only burn gas; the reason is included</td></tr></tbody></table>
+          <p>Fail-closed by design: if an outgoing asset cannot be priced, the policy decision is raised to <code>needs_approval</code> instead of being waved through as a $0 micro-payment.</p>
+          <figure class="shot"><img src="docs/img/playground-simulate.jpg" alt="simulate_tx in the live playground flagging an unlimited USDC approval to a plain wallet" loading="lazy" /><figcaption>The same check in the landing-page playground, on live Base state.</figcaption></figure>
+          <p class="ask">Ask: <i>"A dApp wants me to sign this. What does it actually do?"</i></p>
         </article>
 
         <article class="tool-doc" id="t-policy_check">
@@ -492,7 +545,7 @@ npm test</code></pre></div>
         <h2>Roadmap</h2>
         <ul class="road">
           <li class="done"><em>Phase 1 · Q3 2026</em><b>Genesis</b>Market and wallet tools on 7 EVM chains, stdio transport, MIT license.</li>
-          <li class="now"><em>Phase 2 · Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓, docs &amp; live playground ✓. Next: swap quotes and fork simulation, npm publish, MCP registries.</li>
+          <li class="now"><em>Phase 2 · Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓, docs &amp; live playground ✓, guarded swap quotes ✓, pre-sign transaction simulation ✓. Next: npm publish and MCP registries.</li>
           <li><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>ERC-4337 agent wallets with session keys, x402 settlement, Telegram approvals, HTTP transport, security audit #1.</li>
           <li><em>Phase 4 · Q1–Q2 2027</em><b>Equity Rails</b>Tokenized stock quotes, Parity Guard, market-hours and corporate-action awareness, equity mandates, read-only brokerage sync. See <a href="#equities">Equity Rails</a>.</li>
           <li><em>Phase 5 · Q2 2027</em><b>Token generation</b>Audit #2, MNDT TGE on Base (fair launch), DEX liquidity on Uniswap v4 &amp; Aerodrome with LP locked 12 months, CoinGecko / CoinMarketCap applications, sMNDT staking.</li>
@@ -504,7 +557,7 @@ npm test</code></pre></div>
       <section id="faq" class="doc-sec">
         <h2>FAQ</h2>
         <details><summary>Do I need an API key or wallet?</summary><p>No. All current tools use free public endpoints and are read-only.</p></details>
-        <details><summary>Can my agent actually move money today?</summary><p>Not yet, and that is deliberate. v0.1 provides market intelligence, risk checks and policy decisions. Execution (agent wallets, swaps, x402 settlement) ships next, on top of the same policy engine.</p></details>
+        <details><summary>Can my agent actually move money today?</summary><p>Not yet, and that is deliberate. v0.2 provides market intelligence, risk checks, guarded swap quotes, transaction simulation and policy decisions. Execution (agent wallets that sign, x402 settlement) ships next, on top of the same policy engine.</p></details>
         <details><summary>Which AI models work with it?</summary><p>Any model behind an MCP-capable client: Claude (Desktop, Code), Cursor, Windsurf, Zed, Cline, the OpenAI Agents SDK, or your own agent built on the MCP SDK.</p></details>
         <details><summary>Is my data sent anywhere?</summary><p>Only the queries a tool needs: token ids to CoinGecko, addresses to the RPC and GoPlus. Mandate has no telemetry.</p></details>
         <details><summary>What happens when a data source is down?</summary><p>The tool returns <code>isError: true</code> with the reason. Requests time out after 12 seconds, so the agent is never left hanging.</p></details>
@@ -523,7 +576,7 @@ npm test</code></pre></div>
 }, safe(<span class="k">async</span> ({ address, chain }) =&gt; {
   <span class="k">return</span> { address, chain, result: <span class="s">'…'</span> };
 }));</code></pre></div>
-        <p>Good first issues: ERC-20 balances, <code>quote_swap</code> through a DEX aggregator, Solana RPC support, more chains.</p>
+        <p>Good first issues: ERC-20 balances, an <code>approval_audit</code> tool, a second swap aggregator as a price cross-check, Solana RPC support, more chains.</p>
         <div class="docs-end">
           <a href="#overview" class="btn btn--ghost">Back to top ↑</a>
           <a href="index.html" class="btn btn--gold">Back to site <i class="spark">✦</i></a>

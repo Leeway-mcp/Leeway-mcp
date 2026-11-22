@@ -24,8 +24,8 @@ MCP-сервер, через который ИИ-агенты получают �
 
 ## Что дальше по продукту
 
-1. `npm publish`, чтобы заработал `npx -y mandate-mcp`.
+1. `npm publish`, чтобы заработал `npx -y mandate-mcp-server`.
 2. Подать в каталоги MCP-серверов (официальный реестр MCP, Smithery, mcp.so, awesome-mcp-servers).
-3. Добавить `quote_swap` / `simulate_swap` (0x / 1inch API + симуляция через eth_call).
+3. ~~`swap_quote` / `simulate_tx`~~: сделано в v0.2 (KyberSwap + eth_simulateV1).
 4. Агентский смарт-кошелёк (ERC-4337 session keys) с лимитами из policy engine, затем оплату x402.
 5. Подтверждение крупных трат через Telegram-бота.

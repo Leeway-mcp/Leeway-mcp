@@ -1,5 +1,7 @@
 // Mandate MCP Playground: browser ports of the server tools, hitting the same public APIs.
 // Shows the exact MCP JSON-RPC frames an agent would exchange with the server.
+// swap_quote, simulate_tx and risk scoring run ./onchain.js: a generated copy of the server's own module.
+import { scoreToken, simulateTx, swapQuote, parseUnits } from './onchain.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -50,7 +52,20 @@ export function evaluate({ valueUsd, merchant = '', flagged = false }, p) {
   if (decision === 'allow' && !reasons.length) reasons.push('within all limits');
   return { decision, reasons, remainingTodayUsd: round(remaining) };
 }
-const POLICY = { daily: 50, perTx: 25, hardCap: 500, micro: 1, allowlist: ['uniswap', 'aave'], requireApproval: true, spent: 0 };
+const POLICY = { daily: 50, perTx: 25, hardCap: 500, micro: 1, allowlist: ['uniswap', 'aave', 'kyberswap'], requireApproval: true, spent: 0 };
+
+// data layer handed to the shared guard core (same shape the server passes in)
+const goplusToken = async (chain, address) => (await getJSON(`https://api.gopluslabs.io/api/v1/token_security/${CHAINS[chain].id}?contract_addresses=${address}`)).result?.[address.toLowerCase()] ?? null;
+const goplusAddress = async (address) => (await getJSON(`https://api.gopluslabs.io/api/v1/address_security/${address}`)).result ?? null;
+const CTX = {
+  CHAINS, rpc, getJSON, tokenSecurity: goplusToken, addressSecurity: goplusAddress,
+  // the playground policy has no recipient allowlist; addresses are judged on value and reputation
+  evaluate: ({ valueUsd, merchant = '', flagged }) => evaluate({ valueUsd, merchant: merchant.toLowerCase(), flagged }, POLICY),
+};
+const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
+const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const DRAINER_APPROVE = '0x095ea7b30000000000000000000000002222222222222222222222222222222222222222ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const EMPTY_TRANSFER = '0xa9059cbb000000000000000000000000222222222222222222222222222222222222222200000000000000000000000000000000000000000000000000000000004c4b40';
 
 /* ---------- tools ---------- */
 const ADDR = /^0x[a-fA-F0-9]{40}$/;
@@ -86,22 +101,27 @@ const TOOLS = [
     presets: [['USDC · Base', { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', chain: 'base' }], ['PEPE · ETH', { address: '0x6982508145454Ce325dDbE47a25d4ec3d2311933', chain: 'ethereum' }], ['SHIB · ETH', { address: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', chain: 'ethereum' }]],
     run: async ({ address, chain }) => {
       if (!ADDR.test(address)) throw new ValidationError('address: must be a 0x-prefixed 20-byte hex address');
-      const d = await getJSON(`https://api.gopluslabs.io/api/v1/token_security/${CHAINS[chain].id}?contract_addresses=${address}`);
-      const s = d.result?.[address.toLowerCase()];
+      const s = await goplusToken(chain, address);
       if (!s) return { address, chain, verdict: 'unknown', risk_score: null, flags: ['no security data: treat as high risk'] };
-      const flags = []; let score = 0; const yes = (v) => v === '1';
-      const hit = (c, pts, m) => { if (c) { score += pts; flags.push(m); } };
-      hit(yes(s.is_honeypot), 60, 'honeypot: tokens cannot be sold'); hit(yes(s.cannot_sell_all), 25, 'cannot sell entire balance');
-      hit(yes(s.is_mintable), 15, 'owner can mint new supply'); hit(yes(s.hidden_owner), 15, 'hidden owner');
-      hit(yes(s.owner_change_balance), 25, 'owner can modify balances'); hit(yes(s.selfdestruct), 15, 'contract can self-destruct');
-      hit(yes(s.is_blacklisted), 10, 'has blacklist function'); hit(yes(s.transfer_pausable), 10, 'transfers can be paused');
-      hit(yes(s.is_proxy), 8, 'upgradeable proxy'); hit(s.is_open_source === '0', 20, 'contract source not verified');
-      const bt = Number(s.buy_tax || 0) * 100, st = Number(s.sell_tax || 0) * 100;
-      hit(bt > 10 || st > 10, 15, `high tax (buy ${bt.toFixed(1)}% / sell ${st.toFixed(1)}%)`);
-      const top10 = (s.holders || []).slice(0, 10).reduce((a, h) => a + Number(h.percent || 0), 0) * 100;
-      hit(top10 > 60, 12, `top 10 holders own ${top10.toFixed(1)}%`);
-      score = Math.min(100, score);
-      return { token: { name: s.token_name, symbol: s.token_symbol, holders: Number(s.holder_count || 0) }, risk_score: score, verdict: score >= 60 ? 'DANGEROUS: do not buy' : score >= 30 ? 'CAUTION: elevated risk' : 'No major red flags found', flags, taxes: { buy_pct: round(bt), sell_pct: round(st) }, top10_holders_pct: round(top10) };
+      return { token: { name: s.token_name, symbol: s.token_symbol, holders: Number(s.holder_count || 0) }, ...scoreToken(s) };
+    } },
+  { name: 'swap_quote', icon: '⇄', desc: 'Best DEX route, checked for impact, risk & policy.', source: 'KyberSwap', money: true, fresh: true,
+    fields: [{ ...chainField, value: 'base' }, { key: 'sell', label: 'sell', value: 'ETH' }, { key: 'buy', label: 'buy (symbol or address)', value: 'USDC' }, { key: 'amount', label: 'amount', value: '0.01', type: 'number' }, { key: 'sender', label: 'sender (optional: build + simulate)', value: VITALIK }],
+    presets: [['0.01 ETH → USDC · Base', { chain: 'base', sell: 'ETH', buy: 'USDC', amount: '0.01', sender: VITALIK }], ['$30 USDC → PEPE · ETH', { chain: 'ethereum', sell: 'USDC', buy: '0x6982508145454Ce325dDbE47a25d4ec3d2311933', amount: '30', sender: '' }], ['Whale: 400 ETH → USDC', { chain: 'base', sell: 'ETH', buy: 'USDC', amount: '400', sender: '' }]],
+    run: async ({ chain, sell, buy, amount, sender }) => {
+      if (!/^\d+(\.\d+)?$/.test(amount.trim())) throw new ValidationError('amount: must be a decimal number, e.g. "0.5"');
+      if (sender.trim() && !ADDR.test(sender.trim())) throw new ValidationError('sender: must be a 0x-prefixed 20-byte hex address');
+      return swapQuote(CTX, { chain, sell, buy, amount: amount.trim(), sender: sender.trim() || undefined, fundSender: true });
+    } },
+  { name: 'simulate_tx', icon: '◈', desc: 'Dry-run any tx: assets out/in, approvals, reverts.', source: 'eth_simulateV1', money: true, fresh: true,
+    fields: [{ ...chainField, value: 'base' }, { key: 'from', label: 'from (agent wallet)', value: VITALIK }, { key: 'to', label: 'to', value: USDC_BASE }, { key: 'data', label: 'calldata', value: DRAINER_APPROVE }, { key: 'value', label: 'value (native)', value: '0', type: 'number' }],
+    presets: [['Drainer: unlimited approve', { chain: 'base', from: VITALIK, to: USDC_BASE, data: DRAINER_APPROVE, value: '0' }], ['Send 0.0005 ETH', { chain: 'base', from: VITALIK, to: '0x2222222222222222222222222222222222222222', data: '0x', value: '0.0005' }], ['Transfer that reverts', { chain: 'base', from: '0x7d3a1b2c9e8f4a5b6c7d8e9f0a1b2c3d4e5f6a7b', to: USDC_BASE, data: EMPTY_TRANSFER, value: '0' }]],
+    run: async ({ chain, from, to, data, value }) => {
+      if (!ADDR.test(from.trim())) throw new ValidationError('from: must be a 0x-prefixed 20-byte hex address');
+      if (!ADDR.test(to.trim())) throw new ValidationError('to: must be a 0x-prefixed 20-byte hex address');
+      if (!/^0x([0-9a-fA-F]{2})*$/.test(data.trim() || '0x')) throw new ValidationError('data: must be 0x-prefixed hex calldata');
+      if (!/^\d+(\.\d+)?$/.test(value.trim() || '0')) throw new ValidationError('value: must be a decimal number');
+      return simulateTx(CTX, { chain, from: from.trim(), to: to.trim(), data: data.trim() || '0x', valueWei: parseUnits(value.trim() || '0', 18) });
     } },
   { name: 'check_address', icon: '⛨', desc: 'Phishing / drainer / sanctions reputation.', source: 'GoPlus', fields: [{ key: 'address', label: 'address', value: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' }],
     run: async ({ address }) => {
@@ -134,14 +154,14 @@ if (toolsEl) init();
 
 function init() {
   let current = TOOLS[0], rpcId = 0, running = false;
-  toolsEl.innerHTML = TOOLS.map((t, i) => `<button class="pg-tool${i ? '' : ' is-on'}" data-i="${i}"><i>${t.icon}</i><span><b>${t.name}</b><em>${t.desc}</em></span></button>`).join('');
+  toolsEl.innerHTML = TOOLS.map((t, i) => `<button class="pg-tool${i ? '' : ' is-on'}" data-i="${i}"><i>${t.icon}</i><span><b>${t.name}${t.fresh ? '<sup>new</sup>' : ''}</b><em>${t.desc}</em></span></button>`).join('');
   const select = (i) => {
     current = TOOLS[i];
     $$('.pg-tool').forEach((b) => b.classList.toggle('is-on', +b.dataset.i === i));
     $('#pgName').textContent = current.name;
     $('#pgDesc').textContent = current.desc;
     $('#pgSource').textContent = current.source;
-    $('#pgHint').textContent = current.demo ? 'Demo frame · run the server for a real fetch' : current.source === 'Policy engine' || current.source === 'Ledger' ? 'Evaluated locally · same rules as the server' : `Real request to ${current.source} · no wallet needed`;
+    $('#pgHint').textContent = current.name === 'simulate_tx' ? 'Live simulation on current chain state · nothing is signed' : current.name === 'swap_quote' ? 'Real quote + simulation · hypothetical funds, nothing is sent' : current.demo ? 'Demo frame · run the server for a real fetch' : current.source === 'Policy engine' || current.source === 'Ledger' ? 'Evaluated locally · same rules as the server' : `Real request to ${current.source} · no wallet needed`;
     $('#pgPipe').classList.toggle('no-policy', !current.money);
     $('#pgFields').innerHTML = (current.fields.length ? current.fields.map((f) => f.type === 'select'
       ? `<label class="fld"><span>${f.label}</span><select name="${f.key}">${f.options.map((o) => `<option${o === f.value ? ' selected' : ''}>${o}</option>`).join('')}</select></label>`
@@ -219,7 +239,7 @@ function hl(obj) {
 }
 
 /* ---------- result renderers ---------- */
-const money = (v) => v == null ? 'n/a' : v >= 1000 ? '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 }) : v >= 1 ? '$' + v.toFixed(2) : '$' + v.toPrecision(3);
+const money = (v) => v == null ? 'n/a' : v >= 1000 ? '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 }) : v >= 1 ? '$' + v.toFixed(2) : v === 0 ? '$0' : '$' + +v.toPrecision(2);
 const chg = (v) => v == null ? '' : `<em class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toFixed(2)}%</em>`;
 function renderResult(name, d) {
   const out = $('#pgResult');
@@ -238,10 +258,25 @@ function renderResult(name, d) {
     check_address: () => `<div class="r-verdict ${d.flagged ? 'bad' : 'good'}"><b>${d.flagged ? '✕ Flagged' : '✓ Clean'}</b><span>${d.flagged ? d.flags.map(esc).join(', ') : 'No phishing, drainer or sanctions flags found.'}</span></div><code class="r-addr">${esc(d.address)}</code>`,
     policy_check: () => decisionHTML(d),
     x402_quote: () => `<div class="r-big"><b>${money(d.options[0].amount_usd)} <small>USDC</small></b><span>402 Payment Required · ${esc(d.options[0].network)} · scheme ${esc(d.options[0].scheme)}</span></div>${decisionHTML(d.policy)}<p class="r-note">${esc(d.note)}</p>`,
+    swap_quote: () => `<div class="r-swap"><div><small>Sell</small><b>${num(d.sell.amount)} <i>${esc(d.sell.symbol)}</i></b><span>${money(d.value_in_usd)}</span></div><em aria-hidden="true">→</em><div><small>Receive</small><b>${num(d.buy.amount_out)} <i>${esc(d.buy.symbol)}</i></b><span>${money(d.value_out_usd)} · min ${num(d.buy.min_out)}</span></div></div>
+      <div class="r-verdict ${tone(d.verdict)}"><b>${d.verdict.replace(/_/g, ' ')}</b><span>${esc(d.rate)} · via ${d.route.exchanges.slice(0, 3).map(esc).join(', ')}${d.route.exchanges.length > 3 ? ` +${d.route.exchanges.length - 3} more` : ''} · ${d.route.max_hops} hop${d.route.max_hops > 1 ? 's' : ''}</span></div>
+      ${checksHTML(d.checks)}
+      ${d.simulation?.asset_changes ? `<p class="r-sub">Simulated on block ${d.simulation.block} · ${esc(d.simulation.simulated_with)}</p>${flowHTML(d.simulation.asset_changes)}` : d.simulation ? `<p class="r-sub">${esc(d.simulation.note)}</p>` : ''}`,
+    simulate_tx: () => `<div class="r-verdict ${tone(d.verdict)}"><b>${d.verdict.replace(/_/g, ' ')}</b><span>${esc(d.method)} · block ${d.block ?? 'n/a'} · gas ${money(d.gas.cost_usd)}</span></div>
+      ${d.revert_reason ? `<p class="r-revert">↯ ${esc(d.revert_reason)}</p>` : ''}
+      ${d.asset_changes.length ? flowHTML(d.asset_changes) : '<p class="r-sub">No assets leave or enter the wallet</p>'}
+      ${d.approvals.map((a) => `<div class="r-appr"><b>${a.type === 'all_nfts' ? 'ALL NFTs' : esc(a.amount) + ' ' + esc(a.symbol)}</b><span>approval → <code>${esc(shortAddr(a.spender || a.operator))}</code>${a.spender_is_contract === false ? ' <em>plain wallet</em>' : ''}</span></div>`).join('')}
+      ${d.warnings.length ? `<ul class="r-warns">${d.warnings.map((w) => `<li class="${w.severity}">${esc(w.message)}</li>`).join('')}</ul>` : ''}
+      <p class="r-pol"><span>Policy engine</span><b class="${d.policy.decision}">${d.policy.decision.replace('_', ' ')}</b>${d.policy.reasons.map(esc).join(' · ')}</p>`,
     spending_report: () => `<div class="r-big"><b>${money(d.remainingUsd)}</b><span>left of ${money(d.policy.dailyLimitUsd)} today</span></div><div class="r-bar"><i style="width:${(d.spentUsd / d.policy.dailyLimitUsd) * 100}%"></i></div><div class="r-grid r-grid--3"><div class="r-card"><small>Per tx</small><b>${money(d.policy.perTxLimitUsd)}</b></div><div class="r-card"><small>Hard cap</small><b>${money(d.policy.hardCapUsd)}</b></div><div class="r-card"><small>Micro</small><b>${money(d.policy.microAllowanceUsd)}</b></div></div>`,
   };
   out.innerHTML = R[name]();
 }
+const num = (x) => Number(x).toLocaleString('en-US', { maximumFractionDigits: Math.abs(Number(x)) < 1 ? 6 : 4 });
+const shortAddr = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+const tone = (v) => (['SAFE_TO_SIGN', 'OK_TO_SWAP'].includes(v) ? 'good' : ['REVIEW', 'NEEDS_APPROVAL'].includes(v) ? 'warn' : 'bad');
+const checksHTML = (list) => `<ul class="r-checks">${list.map((c) => `<li class="${c.status}"><i>${c.status === 'pass' ? '✓' : c.status === 'warn' ? '!' : '✕'}</i><b>${c.check.replace(/_/g, ' ')}</b><span>${esc(c.detail)}</span></li>`).join('')}</ul>`;
+const flowHTML = (list) => `<div class="r-flow">${list.map((c) => `<div class="${c.direction}"><i>${c.direction === 'out' ? '−' : '+'}</i><b>${num(c.amount)} ${esc(c.symbol)}</b><span>${money(c.value_usd)}</span></div>`).join('')}</div>`;
 const decisionHTML = (d) => `<div class="r-verdict ${d.decision === 'allow' ? 'good' : d.decision === 'deny' ? 'bad' : 'warn'}"><b>${d.decision.toUpperCase().replace('_', ' ')}</b><span>${d.reasons.map(esc).join(' · ')}</span></div>`;
 
 /* ---------- policy simulator ---------- */

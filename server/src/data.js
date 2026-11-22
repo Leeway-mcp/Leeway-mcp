@@ -13,7 +13,7 @@ export const CHAIN_NAMES = Object.keys(CHAINS);
 const UA = { 'User-Agent': 'mandate-mcp/0.1', Accept: 'application/json' };
 const TIMEOUT = 12_000;
 
-async function getJSON(url, init = {}) {
+export async function getJSON(url, init = {}) {
   const res = await fetch(url, { ...init, headers: { ...UA, ...(init.headers || {}) }, signal: AbortSignal.timeout(TIMEOUT) });
   if (!res.ok) throw new Error(`${new URL(url).host} responded ${res.status}`);
   return res.json();
@@ -32,9 +32,24 @@ export async function rpc(chain, method, params = []) {
 }
 
 /* ---------- market ---------- */
+// CoinGecko first; when it rate-limits (free tier), fall back to DefiLlama so tools keep working.
 export async function prices(ids) {
   const q = encodeURIComponent(ids.join(','));
-  return getJSON(`https://api.coingecko.com/api/v3/simple/price?ids=${q}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`);
+  try {
+    return await getJSON(`https://api.coingecko.com/api/v3/simple/price?ids=${q}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`);
+  } catch (e) {
+    const keys = ids.map((id) => `coingecko:${id}`).join(',');
+    const [p, pct] = await Promise.all([
+      getJSON(`https://coins.llama.fi/prices/current/${keys}`),
+      getJSON(`https://coins.llama.fi/percentage/${keys}`).catch(() => ({ coins: {} })),
+    ]).catch(() => { throw e; });
+    const out = {};
+    for (const id of ids) {
+      const c = p.coins?.[`coingecko:${id}`];
+      if (c) out[id] = { usd: c.price, usd_24h_change: pct.coins?.[`coingecko:${id}`] ?? null, usd_market_cap: null, usd_24h_vol: null };
+    }
+    return out;
+  }
 }
 export async function searchCoin(query) {
   const d = await getJSON(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`);
