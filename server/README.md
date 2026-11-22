@@ -1,16 +1,16 @@
-# mandate-mcp-server
+# leeway-mcp
 
-**Give your agents a mandate, not a private key.**
+**Give your agents leeway, not a private key.**
 
 MCP server that gives Claude, Cursor and any AI agent safe, policy-guarded access to on-chain value. No API keys needed.
 
 ```json
 {
   "mcpServers": {
-    "mandate": {
+    "leeway": {
       "command": "npx",
-      "args": ["-y", "mandate-mcp-server"],
-      "env": { "MANDATE_DAILY_LIMIT_USD": "50", "MANDATE_PER_TX_LIMIT_USD": "25" }
+      "args": ["-y", "leeway-mcp"],
+      "env": { "LEEWAY_DAILY_LIMIT_USD": "50", "LEEWAY_PER_TX_LIMIT_USD": "25" }
     }
   }
 }

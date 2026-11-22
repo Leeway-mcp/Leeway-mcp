@@ -7,9 +7,9 @@ import path from 'node:path';
 const transport = new StdioClientTransport({
   command: process.execPath,
   args: ['src/index.js'],
-  env: { ...process.env, MANDATE_LEDGER: path.join(os.tmpdir(), 'mandate-test-ledger.json'), MANDATE_ALLOWLIST: 'uniswap' },
+  env: { ...process.env, LEEWAY_LEDGER: path.join(os.tmpdir(), 'leeway-test-ledger.json'), LEEWAY_ALLOWLIST: 'uniswap' },
 });
-const client = new Client({ name: 'mandate-smoke', version: '0.0.1' });
+const client = new Client({ name: 'leeway-smoke', version: '0.0.1' });
 await client.connect(transport);
 
 const { tools } = await client.listTools();

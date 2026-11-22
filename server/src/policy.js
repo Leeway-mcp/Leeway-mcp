@@ -8,17 +8,17 @@ const env = process.env;
 const list = (v) => (v ? v.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean) : []);
 
 export const policy = {
-  dailyLimitUsd: Number(env.MANDATE_DAILY_LIMIT_USD ?? 50),
-  perTxLimitUsd: Number(env.MANDATE_PER_TX_LIMIT_USD ?? 25),
-  hardCapUsd: Number(env.MANDATE_HARD_CAP_USD ?? 500),
-  microAllowanceUsd: Number(env.MANDATE_MICRO_ALLOWANCE_USD ?? 1),
-  allowlist: list(env.MANDATE_ALLOWLIST),
-  denylist: list(env.MANDATE_DENYLIST),
-  requireApproval: (env.MANDATE_REQUIRE_APPROVAL ?? 'true') !== 'false',
+  dailyLimitUsd: Number(env.LEEWAY_DAILY_LIMIT_USD ?? 50),
+  perTxLimitUsd: Number(env.LEEWAY_PER_TX_LIMIT_USD ?? 25),
+  hardCapUsd: Number(env.LEEWAY_HARD_CAP_USD ?? 500),
+  microAllowanceUsd: Number(env.LEEWAY_MICRO_ALLOWANCE_USD ?? 1),
+  allowlist: list(env.LEEWAY_ALLOWLIST),
+  denylist: list(env.LEEWAY_DENYLIST),
+  requireApproval: (env.LEEWAY_REQUIRE_APPROVAL ?? 'true') !== 'false',
 };
 
 // Ledger of spends approved today, persisted so limits survive restarts.
-const ledgerFile = env.MANDATE_LEDGER || path.join(os.homedir(), '.mandate-mcp', 'ledger.json');
+const ledgerFile = env.LEEWAY_LEDGER || path.join(os.homedir(), '.leeway-mcp', 'ledger.json');
 const today = () => new Date().toISOString().slice(0, 10);
 
 function readLedger() {

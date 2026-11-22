@@ -1,5 +1,5 @@
 // GENERATED from server/src/onchain.js by `npm run sync-site`. Do not edit here.
-// Mandate guard core: swap quotes, transaction simulation and token risk scoring.
+// Leeway guard core: swap quotes, transaction simulation and token risk scoring.
 // Isomorphic on purpose: no Node imports, only fetch. The landing-page playground runs a
 // byte-for-byte copy of this file (see `npm run sync-site`), so the browser demo and the
 // MCP server make the same decisions.
@@ -14,7 +14,7 @@ export const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 const KYBER_SLUG = { ethereum: 'ethereum', base: 'base', arbitrum: 'arbitrum', optimism: 'optimism', polygon: 'polygon', bsc: 'bsc', avalanche: 'avalanche' };
 const CG_PLATFORM = { ethereum: 'ethereum', base: 'base', arbitrum: 'arbitrum-one', optimism: 'optimistic-ethereum', polygon: 'polygon-pos', bsc: 'binance-smart-chain', avalanche: 'avalanche' };
 const LLAMA_CHAIN = { ethereum: 'ethereum', base: 'base', arbitrum: 'arbitrum', optimism: 'optimism', polygon: 'polygon', bsc: 'bsc', avalanche: 'avax' };
-const KYBER_HEADERS = { 'x-client-id': 'mandate-mcp' };
+const KYBER_HEADERS = { 'x-client-id': 'leeway-mcp' };
 
 // Curated, well-known tokens: [address, decimals]. Anything else must be passed by address
 // and is risk-scanned before the agent is allowed to buy it.
@@ -297,7 +297,7 @@ const short = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 /* ---------------- swap_quote ---------------- */
 /**
- * Best-route swap quote from the KyberSwap aggregator, wrapped in Mandate's checks: price
+ * Best-route swap quote from the KyberSwap aggregator, wrapped in Leeway's checks: price
  * impact, gas share, risk scan of the token being bought and the policy decision. With a
  * `sender` it also builds the exact router calldata and simulates it.
  */

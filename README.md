@@ -1,8 +1,8 @@
 <div align="center">
 
-# Mandate MCP
+# Leeway MCP
 
-**Give your agents a mandate, not a private key.**
+**Give your agents leeway, not a private key.**
 
 An open-source [Model Context Protocol](https://modelcontextprotocol.io) server that gives Claude, Cursor and any AI agent safe, policy-guarded access to on-chain value.
 
@@ -16,7 +16,7 @@ An open-source [Model Context Protocol](https://modelcontextprotocol.io) server 
 
 AI agents are turning into economic actors. They buy data and call paid APIs, and soon they will trade. Handing an LLM a private key is a bad idea, because one prompt injection can drain the wallet.
 
-Mandate puts a **policy engine** between the agent and the money. The agent gets typed tools to read markets, check risk and price payments. Every spend gets an `allow`, `needs_approval` or `deny` decision, enforced on the server side where no prompt can change it.
+Leeway puts a **policy engine** between the agent and the money. The agent gets typed tools to read markets, check risk and price payments. Every spend gets an `allow`, `needs_approval` or `deny` decision, enforced on the server side where no prompt can change it.
 
 ## Tools
 
@@ -42,7 +42,7 @@ The guard core (`server/src/onchain.js`) is isomorphic: the landing-page playgro
 ## Quick start
 
 ```bash
-git clone https://github.com/<you>/mandate-mcp && cd mandate-mcp/server
+git clone https://github.com/<you>/leeway-mcp && cd leeway-mcp/server
 npm install
 npm test          # spawns the server and calls every tool against live data
 ```
@@ -52,35 +52,35 @@ Add it to **Claude Desktop** (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "mandate": {
+    "leeway": {
       "command": "node",
-      "args": ["/absolute/path/to/mandate-mcp/server/src/index.js"],
+      "args": ["/absolute/path/to/leeway-mcp/server/src/index.js"],
       "env": {
-        "MANDATE_DAILY_LIMIT_USD": "50",
-        "MANDATE_ALLOWLIST": "uniswap,aave",
-        "MANDATE_REQUIRE_APPROVAL": "true"
+        "LEEWAY_DAILY_LIMIT_USD": "50",
+        "LEEWAY_ALLOWLIST": "uniswap,aave",
+        "LEEWAY_REQUIRE_APPROVAL": "true"
       }
     }
   }
 }
 ```
 
-**Claude Code:** `claude mcp add mandate -- node /absolute/path/to/mandate-mcp/server/src/index.js`
+**Claude Code:** `claude mcp add leeway -- node /absolute/path/to/leeway-mcp/server/src/index.js`
 
-After `npm publish`, this becomes `npx -y mandate-mcp-server`.
+After `npm publish`, this becomes `npx -y leeway-mcp`.
 
 ## Policy configuration
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `MANDATE_DAILY_LIMIT_USD` | `50` | Total the agent may spend per UTC day |
-| `MANDATE_PER_TX_LIMIT_USD` | `25` | Above this, a human must approve |
-| `MANDATE_HARD_CAP_USD` | `500` | Above this, always denied |
-| `MANDATE_MICRO_ALLOWANCE_USD` | `1` | Micro-payments (x402) at or under this pass without approval |
-| `MANDATE_ALLOWLIST` | (empty) | Comma-separated merchants/protocols. If set, anything else above the micro allowance is denied |
-| `MANDATE_DENYLIST` | (empty) | Always denied |
-| `MANDATE_REQUIRE_APPROVAL` | `true` | Require approval for every non-micro spend |
-| `MANDATE_LEDGER` | `~/.mandate-mcp/ledger.json` | Where the daily spend ledger is stored |
+| `LEEWAY_DAILY_LIMIT_USD` | `50` | Total the agent may spend per UTC day |
+| `LEEWAY_PER_TX_LIMIT_USD` | `25` | Above this, a human must approve |
+| `LEEWAY_HARD_CAP_USD` | `500` | Above this, always denied |
+| `LEEWAY_MICRO_ALLOWANCE_USD` | `1` | Micro-payments (x402) at or under this pass without approval |
+| `LEEWAY_ALLOWLIST` | (empty) | Comma-separated merchants/protocols. If set, anything else above the micro allowance is denied |
+| `LEEWAY_DENYLIST` | (empty) | Always denied |
+| `LEEWAY_REQUIRE_APPROVAL` | `true` | Require approval for every non-micro spend |
+| `LEEWAY_LEDGER` | `~/.leeway-mcp/ledger.json` | Where the daily spend ledger is stored |
 
 ## Example
 
@@ -91,7 +91,7 @@ After `npm publish`, this becomes `npx -y mandate-mcp-server`.
 ## Publishing (maintainers)
 
 1. Replace `YOUR_GITHUB` in `server/package.json` (`mcpName`, `repository`) and `server/server.json`.
-2. `cd server && npm test && npm publish --access public` (package name: `mandate-mcp-server`; `mandate-mcp` is taken on npm).
+2. `cd server && npm test && npm publish --access public` (package name: `leeway-mcp`).
 3. Official MCP Registry: `mcp-publisher login github`, then `mcp-publisher publish` from `server/`.
 
 ## Roadmap
@@ -106,13 +106,13 @@ After `npm publish`, this becomes `npx -y mandate-mcp-server`.
 - [ ] Policy-bound agent smart wallets (ERC-4337) with execution
 - [ ] x402 payment settlement
 - [ ] Human approval via Telegram
-- [ ] **Equity Rails**: tokenized stock quotes, Parity Guard (blocks buys above the real exchange price), equity mandates (per-ticker and sector caps, market hours, no leverage)
+- [ ] **Equity Rails**: tokenized stock quotes, Parity Guard (blocks buys above the real exchange price), equity guardrails (per-ticker and sector caps, market hours, no leverage)
 - [ ] Solana support
 - [ ] Hosted gateway
 
-### Why "Mandate"?
+### Why "Leeway"?
 
-In asset management, a *mandate* is the rulebook a fund manager must follow: what to buy, how much, where. Mandate MCP gives an AI agent exactly that: clear authority within hard limits, for crypto and, with Equity Rails, for tokenized stocks.
+*Leeway* is freedom to act inside set limits. That is the whole product: an agent can trade, pay and act on its own, but only within the room its owner gives it. Not a private key with no limits, and not a leash that makes it useless. The same rails work for crypto and, with Equity Rails, for tokenized stocks.
 
 ## Repository
 
@@ -126,4 +126,4 @@ Run the landing locally: `npx serve site`. Deploy with GitHub Pages by pointing 
 
 ## License
 
-MIT. Not financial advice. `$MNDT` is a concept described on the landing page; no token exists.
+MIT. Not financial advice. `$LWAY` is a concept described on the landing page; no token exists.

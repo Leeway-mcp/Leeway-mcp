@@ -1,4 +1,4 @@
-// Mandate MCP · Three.js scenes (globe + procedural gold objects)
+// Leeway MCP · Three.js scenes (globe + procedural gold objects)
 import * as THREE from 'three';
 import { RoomEnvironment } from '../assets/RoomEnvironment.js';
 import { initGlobe } from './globe.js';
@@ -218,7 +218,7 @@ const BUILDERS = {
   },
 };
 
-/* procedural coin face: rings, rays, a globe-like grid and the MNDT mark */
+/* procedural coin face: rings, rays, a globe-like grid and the LWAY mark */
 function coinFaceTexture() {
   const s = 1024, c = document.createElement('canvas'); c.width = c.height = s;
   const x = c.getContext('2d');
@@ -235,7 +235,7 @@ function coinFaceTexture() {
   // text around
   x.save(); x.translate(cx, cx);
   x.font = '600 58px Instrument Sans, Arial'; x.fillStyle = '#e0e0e0'; x.textAlign = 'center';
-  const txt = 'MANDATE · AGENT ECONOMY · MCP · ';
+  const txt = 'LEEWAY · AGENT ECONOMY · MCP · ';
   for (let i = 0; i < txt.length; i++) {
     x.save(); x.rotate((i / txt.length) * Math.PI * 2); x.fillText(txt[i], 0, -360); x.restore();
   }
@@ -247,13 +247,16 @@ function coinFaceTexture() {
   for (let i = -4; i <= 4; i++) { x.beginPath(); x.moveTo(0, cx + i * 68); x.lineTo(s, cx + i * 68); x.stroke(); }
   x.restore();
   // central mark
-  // raised "M" seal: dark plate, bright double-peak stroke
+  // raised Leeway seal: two rails (the limits) and a free S-curve between them
   x.save(); x.translate(cx, cx);
   x.fillStyle = '#5a5a5a';
   x.beginPath(); x.arc(0, 0, 215, 0, Math.PI * 2); x.fill();
   x.lineJoin = 'round'; x.lineCap = 'round';
   x.strokeStyle = '#f4f4f4'; x.lineWidth = 64;
-  x.beginPath(); x.moveTo(-120, 125); x.lineTo(-120, -105); x.lineTo(0, 20); x.lineTo(120, -105); x.lineTo(120, 125); x.stroke();
+  x.lineWidth = 34;
+  x.beginPath(); x.moveTo(-100, -100); x.lineTo(-100, 100); x.moveTo(100, -100); x.lineTo(100, 100); x.stroke();
+  x.lineWidth = 58;
+  x.beginPath(); x.moveTo(0, 108); x.bezierCurveTo(-80, 82, -80, 22, 0, 0); x.bezierCurveTo(80, -22, 80, -82, 0, -108); x.stroke();
   x.fillStyle = '#e8e8e8';
   x.beginPath(); x.moveTo(0, -190); x.lineTo(22, -160); x.lineTo(0, -130); x.lineTo(-22, -160); x.closePath(); x.fill();
   x.restore();
@@ -290,13 +293,13 @@ function boot() {
           goldEnv(stage);
           build(stage);
           stage.visible = true;
-        } catch (err) { console.warn('[mandate] scene failed', err); }
+        } catch (err) { console.warn('[leeway] scene failed', err); }
       });
     }, { rootMargin: '600px 0px' });
     document.querySelectorAll('.gold-scene').forEach((cv) => lazy.observe(cv));
     loop();
   } catch (err) {
-    console.warn('[mandate] WebGL unavailable, falling back to static visuals', err);
+    console.warn('[leeway] WebGL unavailable, falling back to static visuals', err);
     document.documentElement.classList.add('no-webgl');
   }
 }

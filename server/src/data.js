@@ -10,7 +10,7 @@ export const CHAINS = {
 };
 export const CHAIN_NAMES = Object.keys(CHAINS);
 
-const UA = { 'User-Agent': 'mandate-mcp/0.1', Accept: 'application/json' };
+const UA = { 'User-Agent': 'leeway-mcp/0.1', Accept: 'application/json' };
 const TIMEOUT = 12_000;
 
 export async function getJSON(url, init = {}) {

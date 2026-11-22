@@ -1,12 +1,12 @@
 {
-  "name": "mandate-mcp-server",
+  "name": "leeway-mcp",
   "version": "0.2.0",
-  "mcpName": "io.github.YOUR_GITHUB/mandate-mcp",
+  "mcpName": "io.github.YOUR_GITHUB/leeway-mcp",
   "description": "Open-source MCP server that gives AI agents safe, policy-guarded access to on-chain value: prices, wallets, risk scans, guarded swap quotes, transaction simulation, gas and x402 payment quotes.",
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "mandate-mcp": "src/index.js"
+    "leeway-mcp": "src/index.js"
   },
   "files": [
     "src",
@@ -36,10 +36,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_GITHUB/mandate-mcp.git",
+    "url": "git+https://github.com/YOUR_GITHUB/leeway-mcp.git",
     "directory": "server"
   },
-  "homepage": "https://github.com/YOUR_GITHUB/mandate-mcp#readme",
+  "homepage": "https://github.com/YOUR_GITHUB/leeway-mcp#readme",
   "license": "MIT",
   "engines": {
     "node": ">=18.17"

@@ -1,4 +1,4 @@
-/* Mandate Docs */
+/* Leeway Docs */
 .docs-body { background: radial-gradient(60% 40% at 0% 0%, rgba(120, 70, 40, 0.18), transparent 70%), var(--bg); }
 .container--wide { max-width: 1320px; }
 .docs-badge { font-style: normal; font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-2); border: 1px solid rgba(231, 185, 79, 0.45); padding: 3px 7px; border-radius: 2px; margin-left: 4px; }

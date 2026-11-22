@@ -1,4 +1,4 @@
-// Mandate MCP Playground: browser ports of the server tools, hitting the same public APIs.
+// Leeway MCP Playground: browser ports of the server tools, hitting the same public APIs.
 // Shows the exact MCP JSON-RPC frames an agent would exchange with the server.
 // swap_quote, simulate_tx and risk scoring run ./onchain.js: a generated copy of the server's own module.
 import { scoreToken, simulateTx, swapQuote, parseUnits } from './onchain.js';
@@ -223,7 +223,7 @@ function init() {
     }
     const ms = Math.round(performance.now() - t0);
     $('#pgTime').innerHTML = `<i class="${ok ? 'ok' : 'bad'}">●</i> ${ms} ms`;
-    $('#pgRpc').innerHTML = `<span class="c">// → request (client → mandate)</span>\n${hl(req)}\n\n<span class="c">// ← response (mandate → client)</span>\n${hl(res)}`;
+    $('#pgRpc').innerHTML = `<span class="c">// → request (client → leeway)</span>\n${hl(req)}\n\n<span class="c">// ← response (leeway → client)</span>\n${hl(res)}`;
     btn.disabled = false; btn.classList.remove('is-loading');
     running = false;
   });
