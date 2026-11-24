@@ -2,7 +2,7 @@
 // server, keeps counters in local storage, owns the "Scan with Leeway" context menu.
 import { simulateTx } from './lib/onchain.js';
 import { ctx, chainName } from './lib/chains.js';
-import { analyzeTypedData, scanAddress } from './lib/analyze.js';
+import { analyzeTypedData, analyzeMessage, scanAddress } from './lib/analyze.js';
 
 const api = globalThis.browser ?? globalThis.chrome;
 const DEFAULTS = { enabled: true, paused: [], stats: { checked: 0, warned: 0, blocked: 0 }, history: [] };
@@ -32,6 +32,7 @@ async function analyze(p) {
     if (!r.chain && !r.grants.length) return { ...r, verdict: 'REVIEW' };
     return r;
   }
+  if (p.kind === 'message') return { ...analyzeMessage({ method: p.method, message: p.message, from: p.from, origin: p.origin }), chain };
   throw new Error('unknown request');
 }
 

@@ -23,7 +23,7 @@ const READ = { readOnlyHint: true, openWorldHint: true };
 const ALIASES = { btc: 'bitcoin', eth: 'ethereum', sol: 'solana', bnb: 'binancecoin', usdc: 'usd-coin', usdt: 'tether', tao: 'bittensor', fet: 'fetch-ai', render: 'render-token', near: 'near', virtual: 'virtual-protocol', avax: 'avalanche-2', pol: 'polygon-ecosystem-token', arb: 'arbitrum', op: 'optimism', link: 'chainlink', doge: 'dogecoin' };
 
 export function createServer() {
-  const server = new McpServer({ name: 'leeway-mcp', version: '0.3.0' });
+  const server = new McpServer({ name: 'leeway-mcp', version: '0.3.1' });
   /* ---------------- market ---------------- */
   server.registerTool('get_price', {
     title: 'Get token prices',
@@ -231,10 +231,10 @@ function registerExecutionTools(server) {
 
   server.registerTool('execute_swap', {
     title: 'Execute a swap (policy-gated)',
-    description: 'Swaps the native token for another token at the best DEX route, after the same checks as swap_quote plus a simulation from the agent wallet. Approval flow works like send_transaction. Selling ERC-20 tokens is not enabled yet.',
+    description: 'Swaps at the best DEX route from the agent wallet, after the same checks as swap_quote plus a simulation. Selling an ERC-20 whose router allowance is short becomes a two-step plan: approve the EXACT amount (never unlimited), then swap; both steps are simulated together before signing and one approval covers both. Approval flow works like send_transaction.',
     inputSchema: {
       chain: ExecChain,
-      sell: z.string().min(1).describe('Native token symbol, e.g. ETH'),
+      sell: z.string().min(1).describe('Token to sell: native symbol (ETH), curated symbol (USDC) or contract address'),
       buy: z.string().min(1).describe('Token to buy: symbol or contract address'),
       amount: Decimal.describe('Amount to sell in whole units'),
       slippage_bps: z.number().int().min(1).max(300).default(50),

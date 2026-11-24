@@ -104,6 +104,7 @@ After `npm publish`, this becomes `npx -y leeway-mcp`.
 | `LEEWAY_AGENT_KEY` / `LEEWAY_AGENT_KEY_FILE` | `~/.leeway-mcp/agent-key.json` | Agent hot-wallet key, or where it is stored |
 | `LEEWAY_APPROVALS` / `LEEWAY_APPROVAL_TTL_MIN` | `~/.leeway-mcp/approvals.json` / `15` | Approval store and lifetime |
 | `LEEWAY_TELEGRAM_BOT_TOKEN` / `LEEWAY_TELEGRAM_CHAT_ID` | (empty) | Telegram approvals |
+| `LEEWAY_APPROVAL_WEBHOOK` / `LEEWAY_APPROVAL_WEBHOOK_SECRET` | (empty) | POST approval requests to any URL, signed with `X-Leeway-Signature: sha256=<hmac>` |
 | `LEEWAY_HTTP_TOKEN` / `LEEWAY_ADMIN_TOKEN` / `LEEWAY_HTTP_HOST` | (empty) / (empty) / `127.0.0.1` | HTTP mode: agent token, owner token, bind address |
 
 ## Execution and approvals (v0.3)
@@ -163,7 +164,10 @@ Install from source today: Chrome / Edge / Brave → `chrome://extensions` → D
 - [x] Human approvals via Telegram, CLI and admin HTTP
 - [x] Streamable HTTP transport for remote agents
 - [ ] ERC-4337 smart accounts with scoped session keys
-- [ ] ERC-20 sells with exact allowances · email approvals · audit #1
+- [x] ERC-20 sells with exact allowances (approve + swap simulated together, one approval)
+- [x] Approval webhooks with HMAC signatures (email via Zapier / Make / n8n / Resend)
+- [x] Leeway Guard browser extension v0.1.1 (transactions, Permit / Permit2, personal_sign, SIWE)
+- [ ] Independent security audit #1
 - [ ] **Equity Rails**: tokenized stock quotes, Parity Guard (blocks buys above the real exchange price), equity guardrails (per-ticker and sector caps, market hours, no leverage)
 - [ ] Solana support
 - [ ] Hosted gateway

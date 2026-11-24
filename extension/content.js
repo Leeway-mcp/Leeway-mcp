@@ -1,18 +1,36 @@
 // Leeway Guard · extension world. Binds the private channel from inject.js, asks the
 // background to check each request, and shows the verdict in a closed shadow root that the
 // page cannot read or restyle. The user always makes the final call.
+// All UI is built with DOM APIs (no innerHTML), so no page-controlled string is ever parsed as HTML.
 (() => {
   const api = globalThis.browser ?? globalThis.chrome;
-  let port = null;
 
+  /* ---------------- channel to inject.js ----------------
+     Primary: a MessageChannel port transferred at document_start (private, page can't read it).
+     Fallback: window.postMessage tagged with a per-page token, used only if the port transfer
+     fails (seen in some Firefox builds). First acknowledged channel wins. */
+  let mode = null, port = null, token = null;
   window.addEventListener('message', (e) => {
-    if (port || e.source !== window || e.data?.__leewayGuard !== 'hello' || !e.ports?.[0]) return;
-    port = e.ports[0];
-    port.onmessage = (m) => { if (m.data?.type === 'check') handle(m.data.id, m.data.payload); };
-    port.postMessage({ type: 'ack' });
+    if (e.source !== window) return;
+    const d = e.data;
+    if (!d || typeof d !== 'object') return;
+    if (!mode && d.__leewayGuard === 'hello' && e.ports?.[0]) {
+      mode = 'port'; port = e.ports[0];
+      port.onmessage = (m) => { if (m.data?.type === 'check') handle(m.data.id, m.data.payload); };
+      port.postMessage({ type: 'ack' });
+      return;
+    }
+    if (!mode && d.__leewayGuard === 'hello-fallback' && typeof d.token === 'string' && d.token.length >= 16) {
+      mode = 'post'; token = d.token;
+      window.postMessage({ __leewayGuardExt: token, type: 'ack' }, '*');
+      return;
+    }
+    if (mode === 'post' && d.__leewayGuardPage === token && d.type === 'check') handle(d.id, d.payload);
   });
-
-  const answer = (id, decision) => port?.postMessage({ id, decision });
+  const answer = (id, decision) => {
+    if (mode === 'port') port?.postMessage({ id, decision });
+    else if (mode === 'post') window.postMessage({ __leewayGuardExt: token, id, decision }, '*');
+  };
   const timeout = (ms) => new Promise((_, bad) => setTimeout(() => bad(new Error('the check took too long')), ms));
 
   async function handle(id, payload) {
@@ -29,7 +47,7 @@
     }
     if (result.verdict === 'UNSUPPORTED') {
       ui.close();
-      toast({ tone: 'warn', title: 'Not checked', text: `Chain ${parseInt(result.chainId, 16) || result.chainId || '?'} is not supported yet. The request went to your wallet unchecked.` });
+      toast({ tone: 'warn', title: 'Not checked', body: [h('p', null, `Chain ${parseInt(result.chainId, 16) || result.chainId || '?'} is not supported yet. The request went to your wallet unchecked.`)] });
       return answer(id, 'continue');
     }
     const decision = await ui.show(result);
@@ -37,12 +55,34 @@
     answer(id, decision);
   }
 
+  /* ---------------- tiny DOM builder ---------------- */
+  const SVG = 'http://www.w3.org/2000/svg';
+  function h(tag, attrs, ...kids) {
+    const svg = attrs?.svg || ['svg', 'g', 'path', 'defs', 'linearGradient', 'stop'].includes(tag);
+    const el = svg ? document.createElementNS(SVG, tag) : document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false || k === 'svg') continue;
+      if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+      else if (k === 'class') el.setAttribute('class', v);
+      else el.setAttribute(k, v === true ? '' : String(v));
+    }
+    for (const kid of kids.flat(Infinity)) {
+      if (kid == null || kid === false || kid === '') continue;
+      el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+    }
+    return el;
+  }
+  const mark = () => h('svg', { viewBox: '0 0 40 40', 'aria-hidden': 'true' },
+    h('defs', null, h('linearGradient', { id: 'lgg', x1: '0', y1: '0', x2: '1', y2: '1' },
+      h('stop', { offset: '0', 'stop-color': '#fff2c4' }), h('stop', { offset: '.45', 'stop-color': '#e7b94f' }), h('stop', { offset: '1', 'stop-color': '#8a5a17' }))),
+    h('g', { fill: 'url(#lgg)', transform: 'translate(0 -1.2)' },
+      h('g', { transform: 'rotate(8 20 20)' }, h('path', { d: 'M10 4V30.5H25Z' }), h('path', { d: 'M14.6 8.4 28.4 30.5H33Z' })),
+      h('path', { d: 'M5 34.2h30l-2.6 3H7.6Z' })));
+
   /* ---------------- UI ---------------- */
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const short = (a) => (a && a.length > 14 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a || '?');
   const money = (v) => (v == null ? '' : v >= 1000 ? '$' + Math.round(v).toLocaleString('en-US') : v >= 1 ? '$' + v.toFixed(2) : v === 0 ? '$0' : '$' + +v.toPrecision(2));
-  const num = (x) => { const n = Number(x); return Number.isFinite(n) ? n.toLocaleString('en-US', { maximumFractionDigits: Math.abs(n) < 1 ? 6 : 4 }) : esc(x); };
-  const MARK = '<svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lgg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e7b94f"/><stop offset="1" stop-color="#8a5a17"/></linearGradient></defs><g fill="url(#lgg)" transform="translate(0 -1.2)"><g transform="rotate(8 20 20)"><path d="M10 4V30.5H25Z"/><path d="M14.6 8.4 28.4 30.5H33Z"/></g><path d="M5 34.2h30l-2.6 3H7.6Z"/></g></svg>';
+  const num = (x) => { const n = Number(x); return Number.isFinite(n) ? n.toLocaleString('en-US', { maximumFractionDigits: Math.abs(n) < 1 ? 6 : 4 }) : String(x); };
   const VERDICT = {
     SAFE_TO_SIGN: ['good', 'Looks safe', 'Nothing unusual found in the simulation.'],
     REVIEW: ['warn', 'Review carefully', 'Something here deserves a second look.'],
@@ -50,26 +90,27 @@
     WILL_REVERT: ['bad', 'Will fail', 'The transaction would revert and only burn gas.'],
     ERROR: ['neutral', 'Could not check', 'Leeway could not finish the check. Decide carefully.'],
   };
+  const LOADING = { tx: 'Simulating on live chain state', typed: 'Reading the signature', message: 'Reading the message' };
 
   function host() {
     const el = document.createElement('leeway-guard');
     el.style.cssText = 'all:initial;position:fixed;inset:0;z-index:2147483647;';
     const root = el.attachShadow({ mode: 'closed' });
-    root.innerHTML = `<style>${CSS}</style>`;
+    const style = document.createElement('style');
+    style.textContent = CSS;
+    root.append(style);
     (document.body || document.documentElement).appendChild(el);
     return { el, root };
   }
+  const header = (origin) => h('header', null, mark(), h('b', null, 'Leeway Guard'), h('span', { class: 'site' }, origin));
 
   function overlay(payload) {
     const { el, root } = host();
-    const wrap = document.createElement('div');
-    wrap.className = 'bd';
-    wrap.innerHTML = `<div class="card is-loading" role="dialog" aria-modal="true" aria-label="Leeway Guard">
-      <header>${MARK}<b>Leeway Guard</b><span class="site">${esc(payload.origin)}</span></header>
-      <div class="verdict"><i class="dot"></i><div><b>Checking…</b><span>${payload.kind === 'tx' ? 'Simulating on live chain state' : 'Reading the signature'}</span></div></div>
-      <div class="shimmer"><i></i><i></i><i></i></div>
-    </div>`;
-    root.appendChild(wrap);
+    const card = h('div', { class: 'card is-loading', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Leeway Guard' },
+      header(payload.origin),
+      h('div', { class: 'verdict' }, h('i', { class: 'dot' }), h('div', null, h('b', null, 'Checking…'), h('span', null, LOADING[payload.kind] || LOADING.typed))),
+      h('div', { class: 'shimmer' }, h('i'), h('i'), h('i')));
+    root.append(h('div', { class: 'bd' }, card));
     let done;
     const picked = new Promise((r) => { done = r; });
     const close = () => el.remove();
@@ -77,50 +118,57 @@
       close,
       show(r) {
         const [tone, title, sub] = VERDICT[r.verdict] || VERDICT.REVIEW;
-        const card = wrap.querySelector('.card');
-        card.className = `card t-${tone}`;
-        const meta = [r.method, r.chain, r.gas?.cost_usd != null ? `gas ${money(r.gas.cost_usd)}` : ''].filter(Boolean).map(esc).join(' · ');
         const bad = tone === 'bad';
-        card.innerHTML = `
-          <header>${MARK}<b>Leeway Guard</b><span class="site">${esc(payload.origin)}</span></header>
-          <div class="verdict"><i class="dot"></i><div><b>${title}</b><span>${r.error ? esc(r.error) : sub}</span></div></div>
-          ${meta ? `<p class="meta">${meta}</p>` : ''}
-          ${r.revert_reason ? `<p class="revert">↯ ${esc(r.revert_reason)}</p>` : ''}
-          ${section(r)}
-          ${(r.warnings || []).length ? `<ul class="warns">${r.warnings.map((w) => `<li class="${w.severity === 'high' ? 'hi' : 'md'}">${esc(w.message)}</li>`).join('')}</ul>` : ''}
-          <footer>
-            <button class="b ${bad ? 'b-primary' : 'b-ghost'}" data-d="reject">Reject</button>
-            <button class="b ${bad ? 'b-ghost b-small' : 'b-primary'}" data-d="continue">${bad ? 'Sign anyway' : 'Continue to wallet'}</button>
-          </footer>
-          <small class="foot">Checked locally · nothing was signed · <span>See what you sign.</span></small>`;
+        const meta = [r.method, r.chain, r.gas?.cost_usd != null ? `gas ${money(r.gas.cost_usd)}` : ''].filter(Boolean).join(' · ');
+        const warns = r.warnings || [];
         const finish = (d) => { document.removeEventListener('keydown', onKey, true); close(); done(d); };
         const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); finish('reject'); } };
+        const reject = h('button', { class: `b ${bad ? 'b-primary' : 'b-ghost'}`, 'data-d': 'reject', onclick: () => finish('reject') }, 'Reject');
+        const go = h('button', { class: `b ${bad ? 'b-ghost b-small' : 'b-primary'}`, 'data-d': 'continue', onclick: () => finish('continue') }, bad ? 'Sign anyway' : 'Continue to wallet');
+        card.className = `card t-${tone}`;
+        card.replaceChildren(...[
+          header(payload.origin),
+          h('div', { class: 'verdict' }, h('i', { class: 'dot' }), h('div', null, h('b', null, title), h('span', null, r.error || r.summary || sub))),
+          meta ? h('p', { class: 'meta' }, meta) : null,
+          r.revert_reason ? h('p', { class: 'revert' }, `↯ ${r.revert_reason}`) : null,
+          section(r),
+          warns.length ? h('ul', { class: 'warns' }, warns.map((w) => h('li', { class: w.severity === 'high' ? 'hi' : 'md' }, w.message))) : null,
+          h('footer', null, reject, go),
+          h('small', { class: 'foot' }, 'Checked locally · nothing was signed · ', h('span', null, 'See what you sign.')),
+        ].filter(Boolean));
         document.addEventListener('keydown', onKey, true);
-        card.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => finish(b.dataset.d)));
-        card.querySelector('.b-primary')?.focus();
+        (bad ? reject : go).focus();
         return picked;
       },
     };
   }
 
+  const spender = (addr, isContract) => [h('code', null, short(addr)), isContract === false ? [' ', h('em', null, 'wallet')] : null];
   function section(r) {
     const rows = [];
-    for (const c of r.asset_changes || []) rows.push(`<div class="row ${c.direction}"><i>${c.direction === 'out' ? '−' : '+'}</i><b>${num(c.amount)} ${esc(c.symbol)}</b><span>${money(c.value_usd)}</span></div>`);
-    for (const a of r.approvals || []) rows.push(`<div class="row appr"><i>!</i><b>${a.type === 'all_nfts' ? 'All NFTs' : `${a.amount === 'unlimited' ? 'Unlimited' : num(a.amount)} ${esc(a.symbol)}`}</b><span>approve → <code>${esc(short(a.spender || a.operator))}</code>${a.spender_is_contract === false ? ' <em>wallet</em>' : ''}</span></div>`);
-    for (const g of r.grants || []) rows.push(`<div class="row appr"><i>✎</i><b>${g.amount === 'unlimited' ? 'Unlimited' : num(g.amount)} ${esc(g.symbol)}</b><span>${esc(g.standard)} → <code>${esc(short(g.spender))}</code>${g.spender_is_contract === false ? ' <em>wallet</em>' : ''}${g.valid_until ? ` · until ${esc(g.valid_until)}` : ''}</span></div>`);
-    for (const d of r.details || []) rows.push(`<div class="row det"><code>${esc(d)}</code></div>`);
-    if (!rows.length && r.kind === 'tx' && r.verdict !== 'ERROR') rows.push('<div class="row det"><span>No assets leave or enter your wallet</span></div>');
-    return rows.length ? `<div class="rows">${rows.join('')}</div>` : '';
+    for (const c of r.asset_changes || []) {
+      rows.push(h('div', { class: `row ${c.direction}` }, h('i', null, c.direction === 'out' ? '−' : '+'), h('b', null, `${num(c.amount)} ${c.symbol}`), h('span', null, money(c.value_usd))));
+    }
+    for (const a of r.approvals || []) {
+      const what = a.type === 'all_nfts' ? 'All NFTs' : `${a.amount === 'unlimited' ? 'Unlimited' : num(a.amount)} ${a.symbol}`;
+      rows.push(h('div', { class: 'row appr' }, h('i', null, '!'), h('b', null, what), h('span', null, 'approve → ', spender(a.spender || a.operator, a.spender_is_contract))));
+    }
+    for (const g of r.grants || []) {
+      rows.push(h('div', { class: 'row appr' }, h('i', null, '✎'), h('b', null, `${g.amount === 'unlimited' ? 'Unlimited' : num(g.amount)} ${g.symbol}`),
+        h('span', null, `${g.standard} → `, spender(g.spender, g.spender_is_contract), g.valid_until ? ` · until ${g.valid_until}` : null)));
+    }
+    if (r.message) rows.push(h('div', { class: 'row msg' }, h('pre', null, r.message)));
+    for (const d of r.details || []) rows.push(h('div', { class: 'row det' }, h('code', null, d)));
+    if (!rows.length && r.kind === 'tx' && r.verdict !== 'ERROR') rows.push(h('div', { class: 'row det' }, h('span', null, 'No assets leave or enter your wallet')));
+    return rows.length ? h('div', { class: 'rows' }, rows) : null;
   }
 
-  function toast({ tone = 'neutral', title, text, html }) {
+  function toast({ tone = 'neutral', title, body }) {
     const { el, root } = host();
     el.style.cssText = 'all:initial;position:fixed;right:20px;bottom:20px;z-index:2147483647;';
-    const t = document.createElement('div');
-    t.className = `toast t-${tone}`;
-    t.innerHTML = `<header>${MARK}<b>${esc(title)}</b><button aria-label="Close">×</button></header>${html || `<p>${esc(text)}</p>`}`;
-    root.appendChild(t);
-    t.querySelector('button').addEventListener('click', () => el.remove());
+    root.append(h('div', { class: `toast t-${tone}` },
+      h('header', null, mark(), h('b', null, title), h('button', { 'aria-label': 'Close', onclick: () => el.remove() }, '×')),
+      body));
     setTimeout(() => el.remove(), 12_000);
     return el;
   }
@@ -129,15 +177,22 @@
   api.runtime.onMessage.addListener((msg) => {
     if (msg?.type !== 'leeway-toast') return;
     pendingToast?.remove();
-    if (msg.pending) { pendingToast = toast({ title: 'Scanning…', text: 'Checking the address on 4 chains.' }); return; }
+    if (msg.pending) { pendingToast = toast({ title: 'Scanning…', body: [h('p', null, 'Checking the address on 4 chains.')] }); return; }
     pendingToast = null;
     const r = msg.result || {};
-    if (r.error) return toast({ tone: 'neutral', title: 'Scan failed', text: r.error });
+    if (r.error) return toast({ title: 'Scan failed', body: [h('p', null, r.error)] });
     if (r.type === 'token') {
       const tone = r.risk_score >= 60 ? 'bad' : r.risk_score >= 30 ? 'warn' : 'good';
-      return toast({ tone, title: `${r.symbol} · risk ${r.risk_score}/100`, html: `<p class="v">${esc(r.verdict)}</p><p class="sub">${esc(r.name)} on ${esc(r.chain)} · ${Number(r.holders).toLocaleString('en-US')} holders</p>${r.flags.length ? `<ul class="warns">${r.flags.slice(0, 4).map((f) => `<li class="${tone === 'bad' ? 'hi' : 'md'}">${esc(f)}</li>`).join('')}</ul>` : ''}` });
+      return toast({ tone, title: `${r.symbol} · risk ${r.risk_score}/100`, body: [
+        h('p', { class: 'v' }, r.verdict),
+        h('p', { class: 'sub' }, `${r.name} on ${r.chain} · ${Number(r.holders).toLocaleString('en-US')} holders`),
+        r.flags?.length ? h('ul', { class: 'warns' }, r.flags.slice(0, 4).map((f) => h('li', { class: tone === 'bad' ? 'hi' : 'md' }, f))) : null,
+      ] });
     }
-    toast({ tone: r.flagged ? 'bad' : 'good', title: r.flagged ? 'Flagged address' : 'Address looks clean', html: `<p class="sub"><code>${esc(short(r.address))}</code></p><p>${esc(r.flagged ? r.flags.join(', ') : 'No phishing, drainer or sanctions reports.')}</p>` });
+    toast({ tone: r.flagged ? 'bad' : 'good', title: r.flagged ? 'Flagged address' : 'Address looks clean', body: [
+      h('p', { class: 'sub' }, h('code', null, short(r.address))),
+      h('p', null, r.flagged ? r.flags.join(', ') : 'No phishing, drainer or sanctions reports.'),
+    ] });
   });
 
   const CSS = `
@@ -169,7 +224,8 @@
     .row.in { border-left: 2px solid rgba(33, 211, 107, .7); } .row.in i { color: #21d36b; }
     .row.appr { border-color: rgba(255, 176, 32, .3); background: repeating-linear-gradient(-45deg, rgba(255, 176, 32, .04) 0 8px, transparent 8px 16px), #0c0c13; } .row.appr i { color: #ffb020; }
     .t-bad .row.appr { border-color: rgba(255, 69, 69, .4); background: repeating-linear-gradient(-45deg, rgba(255, 59, 59, .06) 0 8px, transparent 8px 16px), #0c0c13; } .t-bad .row.appr i, .t-bad .row.appr b { color: #ff8a8a; }
-    .row.det { grid-template-columns: 1fr; } .row.det code { font-size: 11.5px; color: #c9c9d4; }
+    .row.det, .row.msg { grid-template-columns: 1fr; } .row.det code { font-size: 11.5px; color: #c9c9d4; }
+    .row.msg pre { margin: 0; max-height: 170px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 11.5px/1.55 "JetBrains Mono", ui-monospace, Consolas, monospace; color: #d6d6de; }
     code { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; color: #e6e6ee; }
     em { font-style: normal; font: 600 9.5px/1 "JetBrains Mono", ui-monospace, Consolas, monospace; letter-spacing: .06em; text-transform: uppercase; padding: 2px 5px; border-radius: 3px; color: #1a0505; background: #ff5a5a; vertical-align: 1px; }
     .warns { list-style: none; margin: 12px 2px 0; padding: 0; display: grid; gap: 6px; }

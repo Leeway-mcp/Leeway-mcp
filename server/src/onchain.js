@@ -172,32 +172,45 @@ async function flaggedAddresses(ctx, addrs) {
  * reports what would actually happen to the sender: assets out/in, approvals granted, revert
  * reason, gas, counterparty reputation and the policy decision. Never signs or broadcasts.
  */
-export async function simulateTx(ctx, { chain, from, to, data = '0x', valueWei = 0n, fundSender = false, merchant = '' }) {
+export async function simulateTx(ctx, { chain, from, to, data = '0x', valueWei = 0n, fundSender = false, merchant = '', preCalls = [] }) {
   const c = ctx.CHAINS[chain];
   if (!c) throw new Error(`unsupported chain "${chain}"`);
   from = lc(from); to = lc(to);
   data = data && data !== '' ? data : '0x';
   if (!/^0x([0-9a-fA-F]{2})*$/.test(data)) throw new Error('data must be 0x-prefixed hex');
   const call = { from, to, data, value: '0x' + valueWei.toString(16) };
+  // optional earlier steps (e.g. an exact approve) run first in the same simulated block, so the
+  // main call sees their state changes
+  const pre = preCalls.map((p) => ({ from, to: lc(p.to), data: p.data || '0x', value: '0x' + BigInt(p.valueWei ?? 0n).toString(16) }));
   const overrides = fundSender ? { [from]: { balance: '0x' + (valueWei + 10n ** 20n).toString(16) } } : undefined;
 
   const [sim, code, gasPriceHex] = await Promise.all([
-    ctx.rpc(chain, 'eth_simulateV1', [{ blockStateCalls: [{ ...(overrides && { stateOverrides: overrides }), calls: [call] }], traceTransfers: true, validation: false }, 'latest'])
-      .then((r) => ({ ok: true, block: r[0], res: r[0].calls[0] }))
+    ctx.rpc(chain, 'eth_simulateV1', [{ blockStateCalls: [{ ...(overrides && { stateOverrides: overrides }), calls: [...pre, call] }], traceTransfers: true, validation: false }, 'latest'])
+      .then((r) => ({ ok: true, block: r[0], all: r[0].calls, res: r[0].calls[r[0].calls.length - 1] }))
       .catch((e) => ({ ok: false, err: e })),
     ctx.rpc(chain, 'eth_getCode', [to, 'latest']).catch(() => null),
     ctx.rpc(chain, 'eth_gasPrice').catch(() => '0x0'),
   ]);
 
-  let status, revert = null, gasUsed = 0n, logs = [], method = 'eth_simulateV1', block = null;
+  let status, revert = null, gasUsed = 0n, logs = [], method = 'eth_simulateV1', block = null, steps = null;
   if (sim.ok) {
-    status = sim.res.status === '0x1' ? 'success' : 'reverted';
-    revert = sim.res.error ? cleanRevert(sim.res.error.message) : null;
-    gasUsed = BigInt(sim.res.gasUsed || 0);
-    logs = sim.res.logs || [];
+    const failed = sim.all.find((r) => r.status !== '0x1');
+    status = failed ? 'reverted' : 'success';
+    revert = failed?.error ? cleanRevert(failed.error.message) : failed ? 'reverted without a reason' : null;
+    gasUsed = sim.all.reduce((a, r) => a + BigInt(r.gasUsed || 0), 0n);
+    logs = sim.all.flatMap((r) => r.logs || []);
     block = sim.block?.number ? Number(BigInt(sim.block.number)) : null;
-  } else { // older nodes: plain eth_call + estimateGas, no asset tracing
+    if (pre.length) {
+      steps = [...pre, call].map((c, i) => {
+        const r = sim.all[i] || {};
+        return { step: i + 1, to: c.to, method: c.data === '0x' ? 'native transfer' : SELECTORS[c.data.slice(0, 10)] ?? `unknown (${c.data.slice(0, 10)})`, status: r.status === '0x1' ? 'success' : 'reverted', gas_used: Number(BigInt(r.gasUsed || 0)), ...(r.error && { revert_reason: cleanRevert(r.error.message) }) };
+      });
+    }
+  } else { // older nodes: plain eth_call + estimateGas, no asset tracing (earlier steps cannot be sequenced)
     method = 'eth_call';
+    if (pre.length) { status = 'reverted'; revert = 'multi-step simulation needs eth_simulateV1'; }
+  }
+  if (!sim.ok && !pre.length) {
     const args = overrides ? [call, 'latest', overrides] : [call, 'latest'];
     try {
       await ctx.rpc(chain, 'eth_call', args);
@@ -280,6 +293,7 @@ export async function simulateTx(ctx, { chain, from, to, data = '0x', valueWei =
   return {
     verdict, status, ...(revert && { revert_reason: revert }),
     chain, block, from, to, method: data === '0x' ? 'native transfer' : SELECTORS[selector] ?? `unknown (${selector})`,
+    ...(steps && { steps }),
     asset_changes: changes, approvals: approvalsOut, ...(nfts.length && { nfts_out: nfts }),
     value_out_usd: round(outUsd), value_in_usd: round(inUsd),
     gas: { used: Number(gasUsed), cost_usd: gasUsd },
@@ -339,7 +353,7 @@ export async function swapQuote(ctx, { chain, sell, buy, amount, slippageBps = 5
   const policy = ctx.evaluate({ valueUsd: round(inUsd) ?? 0, merchant: 'kyberswap' });
   check('policy', policy.decision === 'allow' ? 'pass' : policy.decision === 'deny' ? 'fail' : 'warn', `${policy.decision}: ${policy.reasons.join('; ')}`);
 
-  let simulation, tx;
+  let simulation, tx, approveTx, plan;
   if (sender) {
     const b = await ctx.getJSON(`${base}/route/build`, {
       method: 'POST', headers: { ...KYBER_HEADERS, 'Content-Type': 'application/json' },
@@ -347,9 +361,22 @@ export async function swapQuote(ctx, { chain, sell, buy, amount, slippageBps = 5
     }).catch((e) => ({ code: -1, message: e.message }));
     if (b?.code !== 0 || !b.data?.data) simulation = { verdict: 'NOT_RUN', note: `could not build calldata: ${b?.message ?? 'unknown error'}` };
     else {
-      tx = { to: b.data.routerAddress, data: b.data.data, value: String(b.data.transactionValue || 0) };
-      simulation = await simulateTx(ctx, { chain, from: sender, to: b.data.routerAddress, data: b.data.data, valueWei: BigInt(b.data.transactionValue || 0), fundSender: fundSender && tin.address === NATIVE, merchant: 'kyberswap' });
-      if (simulation.status === 'reverted' && tin.address !== NATIVE) simulation.hint = `selling an ERC-20 needs a balance and an allowance for the router ${b.data.routerAddress}`;
+      const router = b.data.routerAddress;
+      tx = { to: router, data: b.data.data, value: String(b.data.transactionValue || 0) };
+      plan = [{ step: 'swap', to: router }];
+      // ERC-20 sells: if the router's allowance is short, plan an EXACT approve first (never unlimited)
+      // and simulate approve + swap together so the swap sees the new allowance
+      if (!tin.native) {
+        const pad = (h) => h.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+        const allowanceHex = await ctx.rpc(chain, 'eth_call', [{ to: tin.address, data: '0xdd62ed3e' + pad(sender) + pad(router) }, 'latest']).catch(() => '0x0');
+        const allowance = BigInt(allowanceHex && allowanceHex !== '0x' ? allowanceHex : 0);
+        if (allowance < amountIn) {
+          approveTx = { to: tin.address, data: '0x095ea7b3' + pad(router) + pad(amountIn.toString(16)), value: '0' };
+          plan = [{ step: 'approve', token: tin.address, symbol: tin.symbol, spender: router, amount: formatUnits(amountIn, tin.decimals, tin.decimals), exact: true, current_allowance: formatUnits(allowance, tin.decimals, tin.decimals) }, ...plan];
+        }
+      }
+      simulation = await simulateTx(ctx, { chain, from: sender, to: router, data: b.data.data, valueWei: BigInt(b.data.transactionValue || 0), fundSender: fundSender && tin.address === NATIVE, merchant: 'kyberswap', preCalls: approveTx ? [{ to: approveTx.to, data: approveTx.data }] : [] });
+      if (simulation.status === 'reverted' && !tin.native) simulation.hint = `selling an ERC-20 needs enough ${tin.symbol} in the wallet${approveTx ? '' : ' and an allowance for the router ' + router}`;
       check('simulation', simulation.status === 'success' ? 'pass' : 'fail', simulation.status === 'success' ? `succeeds on block ${simulation.block}, receives ${simulation.asset_changes.find((x) => x.direction === 'in')?.amount ?? '?'} ${tout.symbol}` : `reverts: ${simulation.revert_reason}`);
     }
   }
@@ -362,7 +389,7 @@ export async function swapQuote(ctx, { chain, sell, buy, amount, slippageBps = 5
     rate: `1 ${tin.symbol} = ${round(Number(outAmount) / Number(amount), 6)} ${tout.symbol}`,
     value_in_usd: round(inUsd), value_out_usd: round(outUsd), price_impact_pct: round(impact, 3), gas_usd: round(gasUsd, 4),
     route: { aggregator: 'KyberSwap', exchanges, paths: r.route.length, max_hops: Math.max(...r.route.map((p) => p.length)) },
-    checks, policy, ...(risk && { token_risk: risk }), ...(simulation && { simulation }), ...(includeTx && tx && { tx }),
+    checks, policy, ...(risk && { token_risk: risk }), ...(plan && { plan }), ...(simulation && { simulation }), ...(includeTx && tx && { tx }), ...(includeTx && approveTx && { approve_tx: approveTx }),
     note: 'Quote only. Nothing was signed or sent.',
   };
 }

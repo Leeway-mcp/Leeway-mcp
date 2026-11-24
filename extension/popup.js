@@ -1,9 +1,15 @@
 // Leeway Guard · popup: protection switch, per-site pause, counters and the last five checks.
+// Built with DOM APIs only (no innerHTML).
 const api = globalThis.browser ?? globalThis.chrome;
 const $ = (id) => document.getElementById(id);
 const LABEL = { SAFE_TO_SIGN: ['good', 'Looks safe'], REVIEW: ['warn', 'Review'], DO_NOT_SIGN: ['bad', 'Do not sign'], WILL_REVERT: ['bad', 'Would fail'], ERROR: ['warn', 'Not checked'] };
 const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`; };
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) if (v != null) el.setAttribute(k, String(v));
+  for (const kid of kids.flat()) if (kid != null && kid !== '') el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  return el;
+}
 
 let host = null;
 async function render() {
@@ -16,9 +22,11 @@ async function render() {
   $('status').classList.toggle('off', s.enabled === false || paused);
   $('statusText').textContent = s.enabled === false ? 'Protection is off' : paused ? `Paused on ${host}` : 'Protecting every site';
   for (const k of ['checked', 'warned', 'blocked']) $(k).textContent = (s.stats?.[k] ?? 0).toLocaleString('en-US');
-  const h = s.history || [];
-  $('history').innerHTML = h.length ? h.map((e) => { const [tone, label] = LABEL[e.verdict] || LABEL.REVIEW; return `<li><i class="${tone}"></i><span><b>${label}</b><small>${esc(e.site)} · ${esc(e.method || '')}</small></span><time>${ago(e.at)}</time></li>`; }).join('')
-    : '<li class="empty">Nothing checked yet. Open a dApp and press Swap or Sign.</li>';
+  const items = (s.history || []).map((e) => {
+    const [tone, label] = LABEL[e.verdict] || LABEL.REVIEW;
+    return h('li', null, h('i', { class: tone }), h('span', null, h('b', null, label), h('small', null, `${e.site || ''} · ${e.method || ''}`)), h('time', null, ago(e.at)));
+  });
+  $('history').replaceChildren(...(items.length ? items : [h('li', { class: 'empty' }, 'Nothing checked yet. Open a dApp and press Swap or Sign.')]));
 }
 
 (async () => {

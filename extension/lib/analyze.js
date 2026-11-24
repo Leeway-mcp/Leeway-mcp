@@ -80,6 +80,56 @@ export async function analyzeTypedData(ctx, { chainId, from, typed }) {
   return { verdict: high ? 'DO_NOT_SIGN' : warnings.length ? 'REVIEW' : 'SAFE_TO_SIGN', kind: 'signature', chain, method: `${list[0].standard} signature`, grants: out, warnings };
 }
 
+/* ---------------- message signatures: personal_sign / eth_sign ---------------- */
+const SIWE_HEAD = /^(?:(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]*):\/\/)?(?<domain>[^\s/]+) wants you to sign in with your Ethereum account:\n(?<address>0x[a-fA-F0-9]{40})/;
+
+function decodeMessage(msg) {
+  const s = String(msg ?? '');
+  if (!/^0x([0-9a-fA-F]{2})*$/.test(s)) return { text: s, bytes: null };
+  const bytes = new Uint8Array(s.slice(2).match(/../g)?.map((b) => parseInt(b, 16)) ?? []);
+  try {
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    // mostly printable? control characters other than whitespace mean binary data
+    const ctrl = (text.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g) || []).length;
+    return ctrl === 0 && text.length ? { text, bytes } : { text: null, bytes };
+  } catch { return { text: null, bytes }; }
+}
+
+/** SIWE (EIP-4361) fields we show and verify. */
+function parseSiwe(text) {
+  const m = text.match(SIWE_HEAD);
+  if (!m) return null;
+  const field = (name) => text.match(new RegExp(`^${name}: (.+)$`, 'm'))?.[1]?.trim() ?? null;
+  return { domain: m.groups.domain, address: m.groups.address, uri: field('URI'), chainId: field('Chain ID'), nonce: field('Nonce'), issuedAt: field('Issued At'), expiresAt: field('Expiration Time') };
+}
+
+export function analyzeMessage({ method, message, from, origin }) {
+  const warnings = [];
+  const warn = (severity, text) => warnings.push({ severity, message: text });
+  if (method === 'eth_sign') {
+    warn('high', 'blind signature of a raw hash: it can authorise anything, including a transaction that moves your funds');
+    return { verdict: 'DO_NOT_SIGN', kind: 'message', method: 'eth_sign · raw hash', details: [`hash: ${String(message ?? '').slice(0, 66)}`], warnings, summary: 'No legitimate dApp needs this today.' };
+  }
+  const { text, bytes } = decodeMessage(message);
+  if (text == null) {
+    warn('medium', bytes?.length === 32 ? 'the message is a 32-byte value, possibly a hash of something you cannot see' : 'the message is binary data that cannot be read');
+    return { verdict: 'REVIEW', kind: 'message', method: 'personal_sign · binary', details: [`${bytes?.length ?? 0} bytes: ${String(message).slice(0, 66)}${String(message).length > 66 ? '…' : ''}`], warnings };
+  }
+  const shown = text.length > 1200 ? `${text.slice(0, 1200)}…` : text;
+  const siwe = parseSiwe(text);
+  if (siwe) {
+    const site = String(origin || '').toLowerCase();
+    const details = [`domain: ${siwe.domain}`, `account: ${short(siwe.address)}`, siwe.chainId ? `chain id: ${siwe.chainId}` : null, siwe.expiresAt ? `expires: ${siwe.expiresAt}` : null].filter(Boolean);
+    if (lc(siwe.domain) !== site) {
+      warn('high', `this sign-in is for ${siwe.domain}, but you are on ${origin}: a phishing site may be trying to log in to ${siwe.domain} as you`);
+      return { verdict: 'DO_NOT_SIGN', kind: 'message', method: 'Sign-In with Ethereum', message: shown, details, warnings, siwe };
+    }
+    if (from && lc(siwe.address) !== lc(from)) warn('medium', `the sign-in names ${short(siwe.address)}, not the connected account`);
+    return { verdict: warnings.length ? 'REVIEW' : 'SAFE_TO_SIGN', kind: 'message', method: 'Sign-In with Ethereum', message: shown, details, warnings, siwe, summary: 'A sign-in request for this site. No funds move.' };
+  }
+  return { verdict: 'SAFE_TO_SIGN', kind: 'message', method: 'personal_sign · text', message: shown, warnings, summary: 'A plain text message. Signing it cannot move funds by itself; make sure you agree with what it says.' };
+}
+
 /** Right-click "Scan with Leeway": token risk on the first chain with data, else address reputation. */
 export async function scanAddress(ctx, text) {
   const address = String(text || '').match(/0x[a-fA-F0-9]{40}/)?.[0];

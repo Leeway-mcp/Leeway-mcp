@@ -1,6 +1,6 @@
 # Leeway Guard
 
-**See what you sign.** A browser extension that checks every transaction and permit signature before your wallet opens, using the same simulation engine as the Leeway MCP server.
+**See what you sign.** A browser extension (v0.1.1) that checks every transaction, permit and message signature before your wallet opens, using the same simulation engine as the Leeway MCP server.
 
 Works with any wallet that injects an EIP-1193 provider (MetaMask, Rabby, Coinbase Wallet, Phantom EVM, Rainbow…) on any dApp. Open source, local, no account.
 
@@ -10,6 +10,7 @@ Works with any wallet that injects an EIP-1193 provider (MetaMask, Rabby, Coinba
 |---|---|
 | **Transaction firewall** | When a site calls `eth_sendTransaction`, Leeway simulates it on live chain state (`eth_simulateV1` with transfer tracing) and shows what would leave and enter your wallet, which approvals it grants, whether it reverts, and the gas cost. |
 | **Signature firewall** | `eth_signTypedData_v3/v4` requests are decoded. EIP-2612 `Permit`, DAI-style permits and Uniswap Permit2 (`PermitSingle`, `PermitBatch`, `PermitTransferFrom`) are turned into plain facts: token, amount, spender, how long it stays valid. Unlimited amounts, plain-wallet spenders, flagged spenders and long deadlines are called out. Unknown signature types are shown as "Review carefully". |
+| **Message signatures** | `personal_sign` messages are decoded and shown in full. Sign-In with Ethereum (EIP-4361) is recognised: a sign-in for another domain than the site you are on is flagged as phishing ("Do not sign"); a matching one is shown as a safe sign-in. Binary messages are "Review carefully". `eth_sign` (blind signing of a raw hash, which can authorise anything) is always "Do not sign". |
 | **Scan with Leeway** | Select any `0x…` address on a page, right-click → *Scan with Leeway*: token risk score (honeypot, mint, taxes, blacklist, holders, LP lock) or, for a wallet, its phishing/drainer/sanctions reputation. |
 | **Popup** | Protection on/off, pause on the current site, counters (checked, warned, rejected) and the last five checks. |
 
@@ -44,23 +45,24 @@ Chains: Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, Base 
 ```bash
 node scripts/sync-core.mjs          # copy server/src/onchain.js → lib/onchain.js (same engine as the MCP server)
 node scripts/sync-core.mjs --check  # fail if the copy drifted
-node scripts/pack.mjs               # validate the manifest and build dist/leeway-guard-0.1.0.zip
+node scripts/pack.mjs               # validate and build dist/leeway-guard-<v>-chrome.zip, -edge.zip, -firefox.zip
+node scripts/store-assets.mjs <pw-dir> <chromium-exe>   # store screenshots + promo tiles into ../store/assets
 node scripts/icons.mjs <pw-dir>     # re-render icons from site/assets/favicon.svg (needs Playwright)
 node test/guard.test.mjs <pw-dir> [chromium-exe]   # end-to-end test with a mock dApp and wallet
 ```
 
-How it works: `inject.js` runs in the page at `document_start` and patches every wallet provider in place (`window.ethereum`, including wallets injected later, and EIP-6963 announcements). Watched requests travel over a private `MessageChannel` to `content.js`, which asks the background worker to run the check, then shows the verdict in a closed shadow root the page cannot read or restyle. `background.js` runs the shared core (`lib/onchain.js`, generated from the server) plus the signature analyzer (`lib/analyze.js`).
+How it works: `inject.js` runs in the page at `document_start` and patches every wallet provider in place (`window.ethereum`, including wallets injected later, and EIP-6963 announcements). Watched requests travel over a private `MessageChannel` to `content.js` (if a browser cannot hand the port to the extension world within 500 ms, a token-tagged `window.postMessage` channel is used instead; first acknowledged channel wins), which asks the background worker to run the check, then shows the verdict in a closed shadow root the page cannot read or restyle. `background.js` runs the shared core (`lib/onchain.js`, generated from the server) plus the signature analyzer (`lib/analyze.js`).
 
 ## Store status
 
 | Store | Status |
 |---|---|
-| Firefox Add-ons (AMO) | submitting first (free) |
-| Microsoft Edge Add-ons | submitting first (free) |
-| Chrome Web Store | after the first two ($5 developer fee) |
+| Chrome Web Store | package ready: `dist/leeway-guard-<v>-chrome.zip`, listing images in `store/assets/` ($5 developer fee) |
+| Firefox Add-ons (AMO) | package ready: `dist/leeway-guard-<v>-firefox.zip` (free) |
+| Microsoft Edge Add-ons | package ready: `dist/leeway-guard-<v>-edge.zip` (free) |
 
 Until then, install from source as above.
 
 ## Limits
 
-Leeway Guard shows what a request would do; it cannot guarantee that something is safe. A site that specifically targets this extension could try to interfere with the page-side script; the wallet's own confirmation screen still applies. Not financial advice. MIT licensed.
+Leeway Guard shows what a request would do; it cannot guarantee that something is safe. A site that specifically targets this extension could try to interfere with the page-side script (more easily on the postMessage fallback channel, which the page can observe); the wallet's own confirmation screen still applies. Not intercepted yet: `wallet_sendCalls` (EIP-5792) and non-EVM providers. Not financial advice. MIT licensed.

@@ -15,7 +15,7 @@ import { initWallet, loadAccount, execution, keyFile } from './wallet.js';
 import { decide, listApprovals } from './approvals.js';
 import { startTelegramPolling, telegramEnabled } from './telegram.js';
 
-const VERSION = '0.3.0';
+const VERSION = '0.3.1';
 const argv = process.argv.slice(2);
 const cmd = argv[0] && !argv[0].startsWith('--') ? argv[0] : argv.includes('--http') ? 'http' : 'stdio';
 const opt = (name, def) => { const i = argv.indexOf(`--${name}`); return i >= 0 && argv[i + 1] ? argv[i + 1] : def; };

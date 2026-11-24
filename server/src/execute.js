@@ -4,7 +4,8 @@
 import { simulateTx, swapQuote, NATIVE } from './onchain.js';
 import { assertCanExecute, sendTransaction, publicClient } from './wallet.js';
 import { createApproval, consume } from './approvals.js';
-import { notifyApproval, telegramEnabled } from './telegram.js';
+import { telegramEnabled } from './telegram.js';
+import { notifyApproval, webhookEnabled } from './notify.js';
 import { record } from './policy.js';
 import { CHAINS } from './data.js';
 import { randomBytes } from 'node:crypto';
@@ -12,6 +13,7 @@ import { randomBytes } from 'node:crypto';
 const lc = (s) => String(s).toLowerCase();
 const howToApprove = (id) => [
   telegramEnabled ? 'tap Approve in the Telegram message' : null,
+  webhookEnabled() ? 'use the approval notification (webhook)' : null,
   `run \`npx leeway-mcp approve ${id}\``,
   'or POST /approvals/' + id + '/approve on the admin endpoint',
 ].filter(Boolean).join(', ');
@@ -27,7 +29,7 @@ async function gate({ kind, params, summary, valueUsd, policy, verdict, approval
   const reasons = [...policy.reasons, ...(verdict === 'REVIEW' ? ['simulation raised warnings'] : [])];
   const a = createApproval({ kind, params, summary, valueUsd, reasons });
   const notified = await notifyApproval(a);
-  return { ok: false, out: { status: 'pending_approval', approval_id: a.id, expires_at: a.expires_at, reasons, notified_via: notified ? 'telegram' : 'none', next: `Ask the owner to approve (${howToApprove(a.id)}), then call this tool again with the same arguments and approval_id: "${a.id}". Do not retry without it.` } };
+  return { ok: false, out: { status: 'pending_approval', approval_id: a.id, expires_at: a.expires_at, reasons, notified_via: notified, next: `Ask the owner to approve (${howToApprove(a.id)}), then call this tool again with the same arguments and approval_id: "${a.id}". Do not retry without it.` } };
 }
 
 /** send_transaction: any call or transfer from the agent wallet. */
@@ -44,22 +46,38 @@ export async function executeTx(ctx, { chain, to, data = '0x', valueWei = 0n, ap
   return { status: 'sent', ...sent, from: account.address, asset_changes: sim.asset_changes, value_usd: sim.value_out_usd, approved_by: g.approvedBy ?? 'policy' };
 }
 
-/** execute_swap: quote → build → simulate → policy → approval → send. Native-token sells only for now. */
+/**
+ * execute_swap: quote → build → simulate → policy → approval → send.
+ * ERC-20 sells whose router allowance is short become a two-step plan: approve the EXACT amount,
+ * then swap. Both steps are simulated together before anything is signed, and one human approval
+ * covers both. If the swap fails after the approve was mined, the exact allowance stays in place;
+ * it only covers this amount and is used by the next identical swap.
+ */
 export async function executeSwap(ctx, { chain, sell, buy, amount, slippageBps = 50, approvalId }) {
   const account = assertCanExecute(chain);
   const params = { kind: 'swap', chain, sell: lc(sell), buy: lc(buy), amount: String(amount), slippageBps };
   const q = await swapQuote(ctx, { chain, sell, buy, amount, slippageBps, sender: account.address });
-  if (q.sell.token !== 'native') return { status: 'blocked', reason: 'selling ERC-20 tokens needs an allowance step, which is not enabled yet; sell the native token instead', quote: q };
-  if (q.verdict === 'DO_NOT_SWAP' || !q.simulation?.asset_changes) return { status: 'blocked', reason: q.verdict, quote: q };
-  const g = await gate({ kind: 'swap', params, summary: `Swap ${amount} ${q.sell.symbol} → ≥${q.buy.min_out} ${q.buy.symbol} on ${chain} via ${q.route.aggregator}`, valueUsd: q.value_in_usd, policy: q.policy, verdict: q.verdict === 'REVIEW' ? 'REVIEW' : 'OK', approvalId });
-  if (!g.ok) return { ...g.out, quote: q };
+  if (q.verdict === 'DO_NOT_SWAP' || q.simulation?.status !== 'success') {
+    const sim = q.simulation;
+    const reason = sim?.status === 'reverted' ? `simulation reverts: ${sim.revert_reason}${sim.hint ? ` (${sim.hint})` : ''}` : sim?.note || q.verdict;
+    return { status: 'blocked', reason, plan: q.plan, quote: q };
+  }
+  const steps = q.plan?.length > 1 ? `approve exactly ${q.plan[0].amount} ${q.plan[0].symbol}, then swap` : 'swap';
+  const g = await gate({ kind: 'swap', params, summary: `Swap ${amount} ${q.sell.symbol} → ≥${q.buy.min_out} ${q.buy.symbol} on ${chain} via ${q.route.aggregator} (${steps})`, valueUsd: q.value_in_usd, policy: q.policy, verdict: q.verdict === 'REVIEW' ? 'REVIEW' : 'OK', approvalId });
+  if (!g.ok) return { ...g.out, plan: q.plan, quote: q };
   // rebuild right before sending so the route is fresh; min_out still protects the trade
   const fresh = await swapQuote(ctx, { chain, sell, buy, amount, slippageBps, sender: account.address, includeTx: true });
   const tx = fresh.simulation?.status === 'success' ? fresh.tx : null;
-  if (!tx) return { status: 'blocked', reason: 'could not rebuild the route', quote: fresh };
+  if (!tx) return { status: 'blocked', reason: 'could not rebuild a route that simulates cleanly', plan: fresh.plan, quote: fresh };
+  let approveSent = null;
+  if (fresh.approve_tx) {
+    approveSent = await sendTransaction(chain, { to: fresh.approve_tx.to, data: fresh.approve_tx.data, valueWei: 0n });
+    if (approveSent.onchain_status !== 'confirmed') return { status: 'failed', step: 'approve', approve: approveSent, note: 'the exact approve did not confirm; the swap was not sent' };
+  }
   const sent = await sendTransaction(chain, { to: tx.to, data: tx.data, valueWei: BigInt(tx.value) });
+  if (sent.onchain_status === 'reverted') return { status: 'failed', step: 'swap', swap: sent, ...(approveSent && { approve: approveSent, note: 'the swap reverted after the exact approve was mined; that allowance only covers this amount' }) };
   record({ valueUsd: q.value_in_usd ?? 0, memo: `swap ${sent.hash} on ${chain}` });
-  return { status: 'sent', ...sent, sold: q.sell, bought_min: q.buy.min_out, symbol: q.buy.symbol, approved_by: g.approvedBy ?? 'policy' };
+  return { status: 'sent', ...sent, ...(approveSent && { approve: approveSent }), plan: fresh.plan, sold: q.sell, bought_min: q.buy.min_out, symbol: q.buy.symbol, approved_by: g.approvedBy ?? 'policy' };
 }
 
 /* ---------------- x402 ---------------- */

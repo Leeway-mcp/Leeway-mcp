@@ -11,13 +11,15 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'leeway-exec-'));
 const key = generatePrivateKey();
 const agent = privateKeyToAccount(key).address;
 const ENV = {
   ...process.env, LEEWAY_AGENT_KEY: key, LEEWAY_LEDGER: path.join(dir, 'ledger.json'), LEEWAY_APPROVALS: path.join(dir, 'approvals.json'),
-  LEEWAY_EXECUTION_CHAINS: 'base-sepolia', LEEWAY_TELEGRAM_BOT_TOKEN: '', LEEWAY_ALLOWLIST: '',
+  LEEWAY_EXECUTION_CHAINS: 'base-sepolia,base', LEEWAY_TELEGRAM_BOT_TOKEN: '', LEEWAY_ALLOWLIST: '',
+  LEEWAY_APPROVAL_WEBHOOK_SECRET: 'whsec-test-secret',
 };
 const USDC_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 const PAY_TO = '0x2222222222222222222222222222222222222222';
@@ -56,6 +58,20 @@ const merchant = http.createServer(async (req, res) => {
 await new Promise((r) => merchant.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${merchant.address().port}`;
 
+/* ---------- approval webhook receiver (stands in for Zapier / Make / an email sender) ---------- */
+const hooks = [];
+const hookSrv = http.createServer((req, res) => {
+  let raw = '';
+  req.on('data', (c) => { raw += c; });
+  req.on('end', () => {
+    const want = 'sha256=' + crypto.createHmac('sha256', 'whsec-test-secret').update(raw).digest('hex');
+    hooks.push({ body: JSON.parse(raw), sigOk: req.headers['x-leeway-signature'] === want });
+    res.writeHead(200); res.end('ok');
+  });
+});
+await new Promise((r) => hookSrv.listen(0, '127.0.0.1', r));
+ENV.LEEWAY_APPROVAL_WEBHOOK = `http://127.0.0.1:${hookSrv.address().port}/hook`;
+
 /* ---------- stdio client ---------- */
 const client = new Client({ name: 'leeway-exec-test', version: '0.0.1' });
 await client.connect(new StdioClientTransport({ command: process.execPath, args: ['src/index.js'], env: ENV }));
@@ -88,6 +104,9 @@ check('max_usd guard refuses a $5 price', cap.status === 'blocked' && /above max
 
 const pending = await call('x402_pay', { url: `${base}/big` });
 check('$5 payment parks as pending_approval', pending.status === 'pending_approval' && /^[0-9A-F]{6}$/.test(pending.approval_id), `id ${pending.approval_id} · ${pending.reasons?.join('; ')}`);
+const hook = hooks.find((h) => h.body.approval?.id === pending.approval_id);
+check('webhook receives the approval request, HMAC-signed', Boolean(hook) && hook.sigOk && hook.body.type === 'approval_requested' && hook.body.approval.value_usd === 5, hook ? hook.body.approve_hint : 'no webhook call');
+check('pending response lists the webhook channel', Array.isArray(pending.notified_via) && pending.notified_via.includes('webhook'), JSON.stringify(pending.notified_via));
 
 const st = await call('approval_status', { approval_id: pending.approval_id });
 check('approval_status: pending', st.status === 'pending');
@@ -108,6 +127,16 @@ check('approved $5 payment goes through', paid.status === 'paid' && paid.approve
 const replay = await call('x402_pay', { url: `${base}/big`, approval_id: pending.approval_id });
 check('approval cannot be replayed', replay.status === 'blocked' && /already used/.test(replay.reason));
 
+// ERC-20 sell with an unfunded wallet on Base: the plan must be exact approve + swap, simulated
+// together, and blocked before anything is signed (no hash, nothing broadcast)
+const erc = await call('execute_swap', { chain: 'base', sell: 'USDC', buy: 'ETH', amount: '5' });
+const ercJson = JSON.stringify(erc);
+check('ERC-20 sell plans two steps: exact approve, then swap', erc.plan?.length === 2 && erc.plan[0].step === 'approve' && erc.plan[0].exact === true && erc.plan[0].amount === '5' && erc.plan[1].step === 'swap', erc.plan ? `approve ${erc.plan[0]?.amount} ${erc.plan[0]?.symbol} → ${erc.plan[0]?.spender?.slice(0, 10)}…` : erc.error || erc.reason);
+check('both steps simulated together: approve succeeds, swap needs funds', erc.quote?.simulation?.steps?.length === 2 && erc.quote.simulation.steps[0].status === 'success' && erc.quote.simulation.steps[1].status === 'reverted', erc.quote?.simulation?.steps?.map((x) => `${x.method.split('(')[0]}:${x.status}`).join(' → '));
+check('unfunded ERC-20 sell is blocked before signing, never unlimited', erc.status === 'blocked' && !erc.hash && !/unlimited/i.test(ercJson), erc.reason?.slice(0, 90));
+const nat = await call('execute_swap', { chain: 'base', sell: 'ETH', buy: 'USDC', amount: '0.001' });
+check('native sell keeps working: single step, blocked when unfunded', nat.status === 'blocked' && nat.plan?.length === 1 && nat.plan[0].step === 'swap' && !nat.hash, nat.reason?.slice(0, 70));
+
 const rep = await call('spending_report', {});
 check('ledger recorded the spends', Math.abs(rep.spentUsd - 5.04) < 1e-6, `$${rep.spentUsd} spent today`);
 await client.close();
@@ -116,7 +145,7 @@ await client.close();
 const port = 39000 + Math.floor(Math.random() * 500);
 const agentToken = 'agent-token-0123456789', adminToken = 'admin-token-9876543210';
 const srv = spawn(process.execPath, ['src/index.js', 'http', '--port', String(port)], { env: { ...ENV, LEEWAY_HTTP_TOKEN: agentToken, LEEWAY_ADMIN_TOKEN: adminToken }, stdio: ['ignore', 'ignore', 'pipe'] });
-await new Promise((r, j) => { srv.stderr.on('data', (d) => { if (String(d).includes('ready')) r(); }); setTimeout(() => j(new Error('http server did not start')), 15000); });
+await new Promise((r, j) => { srv.stderr.on('data', (d) => { if (String(d).includes('ready')) r(); }); setTimeout(() => j(new Error('http server did not start')), 40000); });
 const url = `http://127.0.0.1:${port}`;
 const noAuth = await fetch(`${url}/mcp`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' }, body: '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' });
 check('HTTP: request without token is rejected', noAuth.status === 401);
@@ -132,6 +161,7 @@ const asAdmin = await fetch(`${url}/approvals`, { headers: { Authorization: `Bea
 check('HTTP: the owner token lists approvals', asAdmin.status === 200 && (await asAdmin.json()).length >= 1);
 srv.kill();
 merchant.close();
+hookSrv.close();
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nall execution checks passed');
 process.exit(failed ? 1 : 0);

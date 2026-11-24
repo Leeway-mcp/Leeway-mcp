@@ -34,7 +34,7 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>SwapX · d
       if (method === 'eth_chainId') return '0x2105';
       if (method === 'eth_accounts' || method === 'eth_requestAccounts') return ['${VITALIK}'];
       if (method === 'eth_sendTransaction') return '0x' + 'ab'.repeat(32);
-      if (method.startsWith('eth_signTypedData')) return '0x' + 'cd'.repeat(65);
+      if (method.startsWith('eth_signTypedData') || method === 'personal_sign' || method === 'eth_sign') return '0x' + 'cd'.repeat(65);
       throw Object.assign(new Error('unsupported'), { code: 4200 });
     },
   };
@@ -50,25 +50,28 @@ await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const dapp = `http://127.0.0.1:${server.address().port}/`;
 
 /* ---------- browser with the unpacked extension ---------- */
-const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'leeway-guard-'));
-const context = await chromium.launchPersistentContext(profile, {
-  headless: false,
-  ...(exe && { executablePath: exe }),
-  viewport: { width: 1280, height: 820 },
-  args: ['--headless=new', `--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`],
-});
-let [sw] = context.serviceWorkers();
-if (!sw) sw = await context.waitForEvent('serviceworker', { timeout: 15000 });
-const extId = new URL(sw.url()).host;
-const ext = await context.newPage();
-await ext.goto(`chrome-extension://${extId}/popup.html`);
-const history = () => ext.evaluate(() => chrome.storage.local.get(['history', 'stats']));
-
-const page = await context.newPage();
+let context, ext, page, history;
 const errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-await page.goto(dapp);
-await page.waitForFunction(() => window.__leewayGuard && window.run);
+async function launch(dir) {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'leeway-guard-'));
+  context = await chromium.launchPersistentContext(profile, {
+    headless: false,
+    ...(exe && { executablePath: exe }),
+    viewport: { width: 1280, height: 820 },
+    args: ['--headless=new', `--disable-extensions-except=${dir}`, `--load-extension=${dir}`],
+  });
+  let [sw] = context.serviceWorkers();
+  if (!sw) sw = await context.waitForEvent('serviceworker', { timeout: 15000 });
+  const extId = new URL(sw.url()).host;
+  ext = await context.newPage();
+  await ext.goto(`chrome-extension://${extId}/popup.html`);
+  history = () => ext.evaluate(() => chrome.storage.local.get(['history', 'stats']));
+  page = await context.newPage();
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(dapp);
+  await page.waitForFunction(() => window.__leewayGuard && window.run);
+}
+await launch(extDir);
 
 let failed = 0;
 const check = (name, cond, extra = '') => { console.log(`${cond ? '✓' : '✕'} ${name}${extra ? `  · ${extra}` : ''}`); if (!cond) failed++; };
@@ -122,6 +125,22 @@ const d = await scenario({ method: 'eth_signTypedData_v4', params: [VITALIK, JSO
 check('(d) 1 USDC permit to a contract → SAFE_TO_SIGN or REVIEW', ['SAFE_TO_SIGN', 'REVIEW'].includes(d.verdict), d.verdict);
 check('(d) Continue passes the signature request to the wallet', d.calls.includes('eth_signTypedData_v4') && d.res?.ok?.startsWith('0x'));
 
+// (g) eth_sign of a raw hash → DO_NOT_SIGN → Escape → 4001, wallet never asked
+const g = await scenario({ method: 'eth_sign', params: [VITALIK, '0x' + 'ab'.repeat(32)] }, 'Escape');
+check('(g) eth_sign raw hash → DO_NOT_SIGN', g.verdict === 'DO_NOT_SIGN', g.method);
+check('(g) rejected, wallet never asked to sign', g.res?.code === 4001 && !g.calls.includes('eth_sign'));
+
+// (h) Sign-In with Ethereum for this very site → SAFE_TO_SIGN → Continue reaches the wallet
+const siwe = (domain) => '0x' + Buffer.from(`${domain} wants you to sign in with your Ethereum account:\n${VITALIK}\n\nSign in to continue.\n\nURI: http://${domain}\nVersion: 1\nChain ID: 8453\nNonce: 32891756\nIssued At: 2026-11-24T10:00:00Z`).toString('hex');
+const hh = await scenario({ method: 'personal_sign', params: [siwe(new URL(dapp).host), VITALIK] }, 'Enter', 'guard-siwe.png');
+check('(h) SIWE for this site → SAFE_TO_SIGN', hh.verdict === 'SAFE_TO_SIGN', hh.method);
+check('(h) Continue passes personal_sign to the wallet', hh.calls.includes('personal_sign') && hh.res?.ok?.startsWith('0x'));
+
+// (i) SIWE for another domain shown on this site → phishing → DO_NOT_SIGN → Reject (primary)
+const ii = await scenario({ method: 'personal_sign', params: [siwe('app.uniswap.org'), VITALIK] }, 'Enter');
+check('(i) SIWE for another domain → DO_NOT_SIGN', ii.verdict === 'DO_NOT_SIGN', ii.method);
+check('(i) Reject returns 4001, wallet never asked', ii.res?.code === 4001 && !ii.calls.includes('personal_sign'));
+
 // non-watched methods are untouched
 const plain = await page.evaluate(() => window.run({ method: 'eth_accounts' }));
 check('read calls are not intercepted', plain.ok?.[0] === VITALIK);
@@ -144,9 +163,24 @@ check('(f) scan: wallet address falls back to reputation', scan2.type === 'addre
 await ext.evaluate((host) => chrome.storage.local.set({ paused: [host] }), new URL(dapp).host);
 const p = await page.evaluate((args) => window.run(args), { method: 'eth_sendTransaction', params: [{ from: VITALIK, to: EOA, value: '0x1' }] });
 check('paused site: request goes straight to the wallet', p.ok?.startsWith('0x'));
-check('no page errors', errors.length === 0, errors.join(' | '));
-
 await context.close();
+
+// Fallback channel: a copy whose content script ignores the transferred port (as if the browser
+// could not hand it to the extension world), so inject.js must switch to the tagged postMessage path.
+const fbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'leeway-guard-fb-'));
+for (const f of fs.readdirSync(extDir)) if (!['test', 'dist', 'node_modules'].includes(f)) fs.cpSync(path.join(extDir, f), path.join(fbDir, f), { recursive: true });
+const cs = path.join(fbDir, 'content.js');
+const csSrc = fs.readFileSync(cs, 'utf8');
+const patched = csSrc.replace("d.__leewayGuard === 'hello' && e.ports?.[0]", "d.__leewayGuard === 'hello' && false");
+check('fallback test patched the content script', patched !== csSrc);
+fs.writeFileSync(cs, patched);
+await launch(fbDir);
+const fa = await scenario({ method: 'eth_sendTransaction', params: [{ from: VITALIK, to: USDC_BASE, data: DRAIN }] }, 'Enter');
+check('fallback channel: drainer still blocked with 4001', fa.verdict === 'DO_NOT_SIGN' && fa.res?.code === 4001 && !fa.calls.includes('eth_sendTransaction'), fa.verdict);
+const fb = await scenario({ method: 'eth_sendTransaction', params: [{ from: VITALIK, to: EOA, value: '0x1c6bf52634000' }] }, 'Enter');
+check('fallback channel: safe transfer continues to the wallet', fb.verdict === 'SAFE_TO_SIGN' && fb.calls.includes('eth_sendTransaction'), fb.verdict);
+await context.close();
+check('no page errors', errors.length === 0, errors.join(' | '));
 server.close();
 console.log(`\nshots: ${shotsDir}`);
 console.log(failed ? `${failed} check(s) failed` : 'all guard checks passed');

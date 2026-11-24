@@ -471,3 +471,39 @@ $$('.post-art').forEach((cv) => {
   };
   requestAnimationFrame(draw);
 });
+
+/* ---------- hero: Leeway Guard verdict card cycles between a drainer and a safe swap ---------- */
+(() => {
+  const card = document.getElementById('heroGuard');
+  if (!card || reduced) return;
+  const STATES = [
+    { cls: 'is-bad', meta: 'simulated · base', title: 'Do not sign', sub: 'approve(address,uint256)', line: 'unlimited USDC → <code>0x2222…2222</code> <em>wallet</em>', main: 'Reject', alt: 'Sign anyway' },
+    { cls: 'is-good', meta: 'simulated · base', title: 'Safe to sign', sub: 'swap(...) · KyberSwap router', line: '<span class="down">−0.05 ETH</span> · <span class="up">+85.49 USDC</span> · gas $0.004', main: 'Continue', alt: 'Reject' },
+  ];
+  const q = (k) => card.querySelector(`[data-hg="${k}"]`);
+  let i = 0, timer = null;
+  const swap = () => {
+    i = (i + 1) % STATES.length;
+    const s = STATES[i];
+    // swap in place and fade the new content in: never an empty card, even if timers lag
+    card.classList.remove('is-bad', 'is-good', 'is-flip');
+    card.classList.add(s.cls);
+    q('meta').textContent = s.meta; q('title').textContent = s.title; q('sub').textContent = s.sub;
+    q('line').innerHTML = s.line; q('main').textContent = s.main; q('alt').textContent = s.alt;
+    void card.offsetWidth;
+    card.classList.add('is-flip');
+  };
+  // step aside only when the globe's city card actually lands on top of this one
+  const city = document.getElementById('globeCard');
+  let watch = null;
+  const overlap = () => {
+    if (!city?.classList.contains('is-on')) return card.classList.remove('is-under');
+    const a = city.getBoundingClientRect(), c = card.getBoundingClientRect();
+    const k = 12; // only a real overlap, not two cards touching
+    card.classList.toggle('is-under', a.left + k < c.right && a.right - k > c.left && a.top + k < c.bottom && a.bottom - k > c.top);
+  };
+  new IntersectionObserver(([e]) => {
+    if (e.isIntersecting && !timer) { timer = setInterval(swap, 6000); watch = setInterval(overlap, 250); }
+    else if (!e.isIntersecting && timer) { clearInterval(timer); clearInterval(watch); timer = watch = null; }
+  }).observe(card);
+})();

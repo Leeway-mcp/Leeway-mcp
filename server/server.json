@@ -6,12 +6,12 @@
     "url": "https://github.com/YOUR_GITHUB/leeway-mcp",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.3.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "leeway-mcp",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "transport": {
         "type": "stdio"
       },
@@ -71,6 +71,20 @@
           "isRequired": false,
           "format": "string",
           "isSecret": false
+        },
+        {
+          "name": "LEEWAY_APPROVAL_WEBHOOK",
+          "description": "URL that receives approval requests (email via Zapier/Make/n8n/Resend)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "LEEWAY_APPROVAL_WEBHOOK_SECRET",
+          "description": "HMAC-SHA256 secret for the X-Leeway-Signature header",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
         }
       ]
     }

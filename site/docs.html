@@ -446,17 +446,23 @@ node test/execution.js</code></pre></div>
 
         <article class="tool-doc" id="t-execute_swap">
           <header><h3><code>execute_swap</code></h3><span class="pill pill--gold">write · policy-gated</span><span class="pill">trading</span></header>
-          <p>Swaps the native token for another token at the best DEX route. It runs <code>swap_quote</code> with the agent wallet as sender (price impact, token risk, policy, simulation), goes through the approval flow, then rebuilds the route right before sending so the price is fresh; <code>min_out</code> still protects the trade. <strong>Only native-token sells are enabled for now</strong>: selling an ERC-20 needs an allowance step, which ships next. Swap routes come from KyberSwap, which does not cover testnets, so this tool needs a mainnet chain the owner opted in to.</p>
+          <p>Swaps at the best DEX route from the agent wallet. It runs <code>swap_quote</code> with the agent wallet as sender (price impact, token risk, policy, simulation), goes through the approval flow, then rebuilds the route right before sending so the price is fresh; <code>min_out</code> still protects the trade. Swap routes come from KyberSwap, which does not cover testnets, so this tool needs a mainnet chain the owner opted in to.</p>
+          <p><strong>Selling an ERC-20</strong> (since v0.3.1): if the router's allowance is lower than the amount, the swap becomes a two-step <code>plan</code>: <code>approve</code> the router for the <em>exact</em> amount (never unlimited), then swap. Both steps are simulated together in one <code>eth_simulateV1</code> block, so the swap is checked against the new allowance before anything is signed, and one human approval covers both steps. The approve is sent first and must confirm before the swap is sent. If the swap then fails, the response says so; the exact allowance stays in place, covers only this amount and is used by the next identical swap. Native-token sells are a single step.</p>
           <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody>
             <tr><td><code>chain</code></td><td>enum</td><td>Default <code>base-sepolia</code>; in practice a mainnet listed in <code>LEEWAY_EXECUTION_CHAINS</code></td></tr>
-            <tr><td><code>sell</code> <i>required</i></td><td>string</td><td>Native token symbol, e.g. <code>ETH</code></td></tr>
+            <tr><td><code>sell</code> <i>required</i></td><td>string</td><td>Native symbol (<code>ETH</code>), curated symbol (<code>USDC</code>) or contract address</td></tr>
             <tr><td><code>buy</code> <i>required</i></td><td>string</td><td>Symbol or contract address</td></tr>
             <tr><td><code>amount</code> <i>required</i></td><td>decimal string</td><td>Amount to sell in whole units</td></tr>
             <tr><td><code>slippage_bps</code></td><td>int 1–300</td><td>Default <code>50</code> (0.5%)</td></tr>
             <tr><td><code>approval_id</code></td><td>6 hex chars</td><td>Approval granted for exactly these arguments</td></tr></tbody></table>
           <div class="code"><div class="code__bar"><em>response · sent</em></div><pre><code>{ <span class="k">"status"</span>: <span class="s">"sent"</span>, <span class="k">"hash"</span>: <span class="s">"0x41d0…77b2"</span>, <span class="k">"sold"</span>: { <span class="k">"symbol"</span>: <span class="s">"ETH"</span>, <span class="k">"amount"</span>: <span class="s">"0.01"</span> },
   <span class="k">"bought_min"</span>: <span class="s">"16.98"</span>, <span class="k">"symbol"</span>: <span class="s">"USDC"</span>, <span class="k">"approved_by"</span>: <span class="s">"3F9A1C"</span> }</code></pre></div>
-          <p>The approval is bound to <code>chain</code>, <code>sell</code>, <code>buy</code>, <code>amount</code> and <code>slippage_bps</code>, not to the calldata, because the route is rebuilt before sending.</p>
+          <div class="code"><div class="code__bar"><em>response · ERC-20 sell from an unfunded wallet, blocked before signing</em></div><pre><code>{ <span class="k">"status"</span>: <span class="s">"blocked"</span>, <span class="k">"reason"</span>: <span class="s">"simulation reverts: TransferHelper: TRANSFER_FROM_FAILED (selling an ERC-20 needs enough USDC in the wallet)"</span>,
+  <span class="k">"plan"</span>: [
+    { <span class="k">"step"</span>: <span class="s">"approve"</span>, <span class="k">"symbol"</span>: <span class="s">"USDC"</span>, <span class="k">"spender"</span>: <span class="s">"0x6131…37b5"</span>, <span class="k">"amount"</span>: <span class="s">"5"</span>, <span class="k">"exact"</span>: true, <span class="k">"current_allowance"</span>: <span class="s">"0"</span> },
+    { <span class="k">"step"</span>: <span class="s">"swap"</span>, <span class="k">"to"</span>: <span class="s">"0x6131…37b5"</span> } ],
+  <span class="k">"quote"</span>: { <span class="k">"simulation"</span>: { <span class="k">"steps"</span>: [ { <span class="k">"method"</span>: <span class="s">"approve(address,uint256)"</span>, <span class="k">"status"</span>: <span class="s">"success"</span> }, { <span class="k">"method"</span>: <span class="s">"swap(...) · KyberSwap router"</span>, <span class="k">"status"</span>: <span class="s">"reverted"</span> } ] } } }</code></pre></div>
+          <p>The approval is bound to <code>chain</code>, <code>sell</code>, <code>buy</code>, <code>amount</code> and <code>slippage_bps</code>, not to the calldata, because the route is rebuilt before sending. Other statuses: <code>failed</code> with <code>step: "approve"</code> (the approve did not confirm, the swap was not sent) or <code>step: "swap"</code> (the swap reverted after the approve was mined).</p>
         </article>
 
         <article class="tool-doc" id="t-x402_pay">
@@ -520,6 +526,8 @@ node test/execution.js</code></pre></div>
           <tr><td><code>LEEWAY_APPROVAL_TTL_MIN</code></td><td>15</td><td>Minutes before an undecided request expires</td></tr>
           <tr><td><code>LEEWAY_TELEGRAM_BOT_TOKEN</code></td><td>(unset)</td><td>Bot token from @BotFather, enables Telegram approvals</td></tr>
           <tr><td><code>LEEWAY_TELEGRAM_CHAT_ID</code></td><td>(unset)</td><td>The only chat whose button presses are accepted</td></tr>
+          <tr><td><code>LEEWAY_APPROVAL_WEBHOOK</code></td><td>(unset)</td><td>URL that receives every approval request as JSON (email, Slack, anything via Zapier / Make / n8n)</td></tr>
+          <tr><td><code>LEEWAY_APPROVAL_WEBHOOK_SECRET</code></td><td>(unset)</td><td>Signs the webhook body: <code>X-Leeway-Signature: sha256=&lt;HMAC-SHA256 hex&gt;</code></td></tr>
           <tr><td><code>LEEWAY_HTTP_TOKEN</code></td><td>(unset)</td><td>Bearer token for <code>POST /mcp</code> in HTTP mode (16+ chars, required)</td></tr>
           <tr><td><code>LEEWAY_ADMIN_TOKEN</code></td><td>(unset)</td><td>Bearer token for the approval endpoints. Must differ from the agent token</td></tr>
           <tr><td><code>LEEWAY_HTTP_HOST</code></td><td>127.0.0.1</td><td>Bind address in HTTP mode (also <code>--host</code>; port via <code>--port</code> or <code>PORT</code>, default 3333)</td></tr>
@@ -608,14 +616,25 @@ node test/execution.js</code></pre></div>
           <div><b>Telegram</b><span>Set <code>LEEWAY_TELEGRAM_BOT_TOKEN</code> and <code>LEEWAY_TELEGRAM_CHAT_ID</code>. Each request arrives as a message with Approve / Deny buttons. Only callbacks from that chat are accepted.</span></div>
           <div><b>CLI</b><span><code>npx leeway-mcp approvals</code> lists requests; <code>npx leeway-mcp approve &lt;id&gt;</code> or <code>deny &lt;id&gt;</code> decides. Works with no extra setup.</span></div>
           <div><b>Admin HTTP</b><span><code>POST /approvals/&lt;id&gt;/approve</code> (or <code>/deny</code>) with <code>Authorization: Bearer $LEEWAY_ADMIN_TOKEN</code>. The admin token must differ from the agent token; the server refuses to start otherwise.</span></div>
+          <div><b>Webhook · email</b><span>Set <code>LEEWAY_APPROVAL_WEBHOOK</code> and every request is POSTed as JSON within 5 s (a slow or broken endpoint never blocks the tool). Point it at Zapier, Make, n8n or a small function that sends an email (e.g. via Resend). With <code>LEEWAY_APPROVAL_WEBHOOK_SECRET</code> the body is signed with HMAC-SHA256 in <code>X-Leeway-Signature</code>.</span></div>
           <div><b>Expiry</b><span>Undecided requests expire. A pending, denied, expired or already-used approval makes the tool return <code>blocked</code> with the reason.</span></div>
         </div>
+
+        <div class="code"><div class="code__bar"><em>webhook payload · POST to LEEWAY_APPROVAL_WEBHOOK</em></div>
+<pre><code>{ <span class="k">"type"</span>: <span class="s">"approval_requested"</span>,
+  <span class="k">"approval"</span>: { <span class="k">"id"</span>: <span class="s">"3F9A1C"</span>, <span class="k">"summary"</span>: <span class="s">"Pay $5 USDC to api.meteo.xyz for https://api.meteo.xyz/v1/forecast"</span>,
+                <span class="k">"value_usd"</span>: 5, <span class="k">"reasons"</span>: [<span class="s">"owner requires approval for non-micro spends"</span>], <span class="k">"expires_at"</span>: <span class="s">"2026-11-24T12:15:00.000Z"</span> },
+  <span class="k">"approve_hint"</span>: <span class="s">"npx leeway-mcp approve 3F9A1C  (or deny 3F9A1C)"</span> }
+
+<span class="c">// verify on the receiver (Node):</span>
+<span class="c">// crypto.createHmac('sha256', SECRET).update(rawBody).digest('hex') === header.slice(7)</span></code></pre></div>
+        <p>The pending response tells the agent which channels were reached: <code>"notified_via": ["telegram", "webhook"]</code>, or <code>["none"]</code> when only the CLI is set up.</p>
 
         <h3>A full flow</h3>
         <div class="code"><div class="code__bar"><em>x402_pay with a $5 price (above the $1 micro allowance)</em></div>
 <pre><code><span class="c">// 1 · agent → x402_pay({ url: "https://api.meteo.xyz/v1/forecast" })</span>
 { <span class="k">"status"</span>: <span class="s">"pending_approval"</span>, <span class="k">"approval_id"</span>: <span class="s">"3F9A1C"</span>, <span class="k">"expires_at"</span>: <span class="s">"2026-11-24T12:15:00.000Z"</span>,
-  <span class="k">"reasons"</span>: [<span class="s">"owner requires approval for non-micro spends"</span>], <span class="k">"notified_via"</span>: <span class="s">"telegram"</span>,
+  <span class="k">"reasons"</span>: [<span class="s">"owner requires approval for non-micro spends"</span>], <span class="k">"notified_via"</span>: [<span class="s">"telegram"</span>],
   <span class="k">"next"</span>: <span class="s">"Ask the owner to approve (…), then call this tool again with the same arguments and approval_id"</span> }
 
 <span class="c">// 2 · owner taps ✅ Approve in Telegram   (or: npx leeway-mcp approve 3F9A1C)</span>
@@ -654,10 +673,10 @@ node test/execution.js</code></pre></div>
 <pre><code>LEEWAY_HTTP_TOKEN=$(openssl rand -hex 24) \
 LEEWAY_ADMIN_TOKEN=$(openssl rand -hex 24) \
 npx leeway-mcp http --port 3333
-<span class="c"># [leeway-mcp] v0.3.0 ready over http://127.0.0.1:3333/mcp · wallet 0xB6c6…445a · execution base-sepolia</span></code></pre></div>
+<span class="c"># [leeway-mcp] v0.3.1 ready over http://127.0.0.1:3333/mcp · wallet 0xB6c6…445a · execution base-sepolia</span></code></pre></div>
         <table class="params"><thead><tr><th>Endpoint</th><th>Auth</th><th>Purpose</th></tr></thead><tbody>
           <tr><td><code>POST /mcp</code></td><td>Bearer <code>LEEWAY_HTTP_TOKEN</code></td><td>MCP JSON-RPC (Streamable HTTP). Other methods return 405</td></tr>
-          <tr><td><code>GET /health</code></td><td>none</td><td><code>{ "ok": true, "name": "leeway-mcp", "version": "0.3.0" }</code></td></tr>
+          <tr><td><code>GET /health</code></td><td>none</td><td><code>{ "ok": true, "name": "leeway-mcp", "version": "0.3.1" }</code></td></tr>
           <tr><td><code>GET /approvals</code></td><td>Bearer <code>LEEWAY_ADMIN_TOKEN</code></td><td>Recent approval requests</td></tr>
           <tr><td><code>POST /approvals/&lt;id&gt;/approve</code> · <code>/deny</code></td><td>Bearer <code>LEEWAY_ADMIN_TOKEN</code></td><td>Owner decision</td></tr></tbody></table>
         <ul>
@@ -797,7 +816,7 @@ npx leeway-mcp http --port 3333
         <ul class="road">
           <li class="done"><em>Phase 1 · Q3 2026</em><b>Genesis</b>Market and wallet tools on 7 EVM chains, stdio transport, MIT license.</li>
           <li class="done"><em>Phase 2 · Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓, docs &amp; live playground ✓, guarded swap quotes ✓, pre-sign transaction simulation ✓. Still to do: npm publish and MCP registries, once the GitHub account is set up.</li>
-          <li class="now"><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>Agent wallet ✓, policy-gated execution ✓, x402 settlement in USDC ✓, Telegram / CLI / HTTP approvals ✓, HTTP transport ✓, <a href="#guard">Leeway Guard</a> browser extension v0.1 (Firefox and Edge stores first, then Chrome). Next: ERC-4337 smart accounts with scoped session keys, ERC-20 sells with exact allowances, email approvals, security audit #1.</li>
+          <li class="now"><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>Agent wallet ✓, policy-gated execution ✓, x402 settlement in USDC ✓, Telegram / CLI / HTTP approvals ✓, HTTP transport ✓, <a href="#guard">Leeway Guard</a> browser extension v0.1 (Firefox and Edge stores first, then Chrome). ERC-20 sells with exact allowances ✓, email approvals via signed webhook ✓. Next: ERC-4337 smart accounts with scoped session keys, security audit #1.</li>
           <li><em>Phase 4 · Q1–Q2 2027</em><b>Equity Rails</b>Tokenized stock quotes, Parity Guard, market-hours and corporate-action awareness, equity guardrails, read-only brokerage sync. See <a href="#equities">Equity Rails</a>.</li>
           <li><em>Phase 5 · Q2 2027</em><b>Token generation</b>Audit #2, LWAY TGE on Base (fair launch), DEX liquidity on Uniswap v4 &amp; Aerodrome with LP locked 12 months, CoinGecko / CoinMarketCap applications, sLWAY staking.</li>
           <li><em>Phase 6 · Q3 2027</em><b>Gateway network</b>Hosted gateway and node operators, x402 fee share, Solana support, tier-2 exchange listings.</li>

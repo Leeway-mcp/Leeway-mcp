@@ -955,11 +955,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 
 /* ---------- hero: new product pill ---------- */
-.hero__new { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 22px; padding: 5px 14px 5px 5px; border: 1px solid rgba(231, 185, 79, 0.35); border-radius: 100px; background: linear-gradient(90deg, rgba(231, 185, 79, 0.12), rgba(10, 10, 16, 0.5)); font-size: 12.5px; color: #e9dcb8; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: border-color 0.3s, background 0.3s; }
-.hero__new em { font-style: normal; font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; color: #1a1205; background: var(--gold); }
-.hero__new i { font-style: normal; color: var(--gold-2); transition: transform 0.3s var(--ease); }
-.hero__new:hover { border-color: rgba(231, 185, 79, 0.7); }
-.hero__new:hover i { transform: translateX(3px); }
+
+
+
+
+
 
 /* ---------- Leeway Guard section ---------- */
 .section--guard { overflow: hidden; }
@@ -1152,3 +1152,53 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .legal-foot span { margin-right: auto; }
 .legal-foot a:hover { color: var(--gold-1); }
 @media (max-width: 560px) { .legal { padding-top: 110px; } .legal-table table { min-width: 520px; } }
+
+/* ---------- hero: extension chip + floating Leeway Guard verdict ---------- */
+.hero-ext { position: relative; display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 13px 0 9px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 2px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: border-color 0.3s, background 0.3s, transform 0.3s var(--ease); }
+.hero-ext:hover { border-color: rgba(231, 185, 79, 0.55); background: rgba(231, 185, 79, 0.07); transform: translateY(-2px); }
+.hero-ext__icons { display: flex; }
+.hero-ext__icons svg { width: 26px; height: 26px; padding: 5px; margin-left: -8px; border-radius: 50%; background: #121219; box-shadow: 0 0 0 1px rgba(231, 185, 79, 0.35); fill: none; stroke: var(--gold-1); stroke-width: 1.6; stroke-linecap: round; transition: transform 0.35s var(--ease); }
+.hero-ext__icons svg:first-child { margin-left: 0; }
+.hero-ext:hover .hero-ext__icons svg:nth-child(1) { transform: translateX(-2px); }
+.hero-ext:hover .hero-ext__icons svg:nth-child(3) { transform: translateX(2px); }
+.hero-ext__txt { display: flex; flex-direction: column; line-height: 1.15; }
+.hero-ext__txt b { font-size: 12.5px; font-weight: 600; color: #f1f1f4; }
+.hero-ext__txt small { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--muted); }
+.hero-ext em { position: absolute; top: -8px; right: -8px; font-style: normal; font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 6px; border-radius: 100px; color: #1a1205; background: var(--gold); box-shadow: 0 4px 14px -4px rgba(231, 185, 79, 0.8); }
+
+.hg { --c: 255, 90, 90; position: absolute; z-index: 2; left: -2%; top: 57%; width: 254px; padding: 12px 14px 13px; pointer-events: none; border-radius: 12px; background: linear-gradient(180deg, rgba(20, 20, 28, 0.82), rgba(10, 10, 15, 0.78)); border: 1px solid rgba(var(--c), 0.38); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.9), 0 0 50px -24px rgba(var(--c), 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05); animation: floaty 7s ease-in-out infinite, hgIn 0.9s var(--ease) 0.9s both; transition: border-color 0.5s, box-shadow 0.5s; }
+.hg.is-good { --c: 33, 211, 107; }
+/* step aside while the globe shows a city card */
+.hg { transition: border-color 0.5s, box-shadow 0.5s, filter 0.4s; }
+.hg.is-under { filter: opacity(0.35); }
+@keyframes hgIn { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+.hg__head { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+.hg__head svg { width: 15px; height: 15px; }
+.hg__head b { font-family: var(--f-head); font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #eee; }
+.hg__head small { margin-left: auto; font-family: var(--f-mono); font-size: 9.5px; color: var(--dim); white-space: nowrap; }
+.hg__head b { white-space: nowrap; }
+.hg__verdict { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 8px; background: rgba(var(--c), 0.09); border: 1px solid rgba(var(--c), 0.28); transition: background 0.5s, border-color 0.5s; }
+.hg__verdict i { flex: none; width: 9px; height: 9px; border-radius: 50%; background: rgb(var(--c)); box-shadow: 0 0 0 4px rgba(var(--c), 0.18), 0 0 12px rgba(var(--c), 0.9); animation: hgPulse 1.8s ease-in-out infinite; }
+@keyframes hgPulse { 50% { box-shadow: 0 0 0 7px rgba(var(--c), 0.05), 0 0 18px rgba(var(--c), 1); } }
+.hg__verdict b { display: block; font-family: var(--f-head); font-weight: 500; font-size: 15px; color: rgb(var(--c)); }
+.hg__verdict span { display: block; font-family: var(--f-mono); font-size: 10px; color: var(--muted); margin-top: 1px; }
+.hg__line { margin: 9px 1px 10px; font-size: 11.5px; color: #d8d8e0; }
+.hg__line code { font-family: var(--f-mono); color: #fff; }
+.hg__line em { white-space: nowrap; font-style: normal; font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 5px; border-radius: 3px; color: #1a0505; background: rgb(var(--c)); }
+.hg__line .up { color: var(--up); } .hg__line .down { color: #ff8a8a; }
+.hg__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.hg__b { text-align: center; padding: 6px 0; font-size: 11px; font-weight: 600; border-radius: 6px; color: #bbb; border: 1px solid rgba(255, 255, 255, 0.1); }
+.hg__b--main { color: #1a1205; border: 0; background: var(--gold); box-shadow: 0 6px 18px -8px rgba(231, 185, 79, 0.9); }
+.hg.is-flip [data-hg] { animation: hgFlip 0.45s var(--ease) both; }
+@keyframes hgFlip { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (max-width: 1080px) {
+  .hg { left: -6%; top: 44%; width: 214px; padding: 10px 12px 11px; }
+  .hg__head small, .hg__line, .hg__btns { display: none; }
+  .hg__head { margin-bottom: 8px; }
+}
+@media (max-width: 900px) { .hg { left: 4%; top: auto; bottom: 96px; } }
+@media (max-width: 560px) { .hg { display: none; } }
+@media (prefers-reduced-motion: reduce) { .hg, .hg__verdict i { animation: none; } }
+/* when the globe tour shows a city card, the Guard card steps back so the two never fight */
+.hg > * { transition: opacity 0.45s; }
+.hg { transition: border-color 0.5s, box-shadow 0.5s, background 0.45s; }
