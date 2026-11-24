@@ -35,8 +35,8 @@
 ### Роадмап (7 фаз) и лестница листингов
 
 1. Genesis (Q3 2026): сервер, тулы маркета и кошельков. ✅
-2. Guardrails (Q4 2026): policy engine, риск-сканер, x402 quotes, docs, playground, guarded swap quotes (swap_quote), симуляция транзакций до подписи (simulate_tx) ✓; осталось: npm + MCP Registry. ⏳
-3. Wallets & Payments (Q1 2027): ERC-4337 кошельки агентов, x402 settlement, аудит #1.
+2. Guardrails (Q4 2026): policy engine, риск-сканер, x402 quotes, docs, playground, swap_quote, simulate_tx ✓. Публикация в npm и MCP Registry подготовлена, ждёт запуска.
+3. Wallets & Payments (Q4 2026 – Q1 2027) ⏳: горячий кошелёк агента с исполнением через policy (по умолчанию только тестнет) ✓, x402 settlement в USDC (v1 + v2) ✓, подтверждения через Telegram, CLI и admin HTTP ✓, Streamable HTTP для удалённых агентов ✓; дальше: ERC-4337 со scoped session keys, email-подтверждения, продажа ERC-20 с точным allowance, аудит #1.
 4. **Equity Rails (Q1–Q2 2027)**: токенизированные акции, Parity Guard, мандаты для акций.
 5. Token Generation (Q2 2027): аудит #2, TGE на Base, DEX (Uniswap v4, Aerodrome), LP lock 12 мес., CoinGecko/CMC.
 6. Gateway Network (Q3 2027): ноды, fee share, Solana, CEX второго эшелона.

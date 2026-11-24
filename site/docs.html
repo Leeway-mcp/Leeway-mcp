@@ -65,11 +65,19 @@
         <a href="#t-policy_check" class="sub">policy_check</a>
         <a href="#t-x402_quote" class="sub">x402_quote</a>
         <a href="#t-spending_report" class="sub">spending_report</a>
+        <a href="#t-wallet_info" class="sub">wallet_info</a>
+        <a href="#t-send_transaction" class="sub">send_transaction</a>
+        <a href="#t-execute_swap" class="sub">execute_swap</a>
+        <a href="#t-x402_pay" class="sub">x402_pay</a>
+        <a href="#t-approval_status" class="sub">approval_status</a>
+        <a href="#t-list_approvals" class="sub">list_approvals</a>
         <a href="#resources">Resources</a>
         <a href="#config">Configuration</a>
         <p class="docs-side__group">Concepts</p>
         <a href="#policy">Policy engine</a>
+        <a href="#execution">Execution &amp; approvals</a>
         <a href="#x402">x402 payments</a>
+        <a href="#http">Remote agents (HTTP)</a>
         <a href="#security">Security model</a>
         <a href="#equities">Equity Rails (stocks)</a>
         <a href="#token">LWAY token (concept)</a>
@@ -84,12 +92,12 @@
     <main class="docs-main" id="docsMain">
 
       <section id="overview" class="doc-sec">
-        <p class="label">[ Documentation · v0.1 ]</p>
+        <p class="label">[ Documentation · v0.3 ]</p>
         <h1 class="docs-h1">Leeway <span class="fade">MCP</span></h1>
         <p class="lead">Leeway is an open-source <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> server that gives AI agents safe, policy-guarded access to on-chain value. Plug it into Claude, Cursor or any MCP client, and your agent can read markets, check wallets, scan tokens for scams and price x402 payments. Every spend goes through a policy engine that you configure, and nothing the agent says can change it.</p>
         <div class="doc-cards">
           <a href="#quickstart" class="doc-card"><b>Quick start →</b><span>Install and connect your agent in under a minute.</span></a>
-          <a href="#tools" class="doc-card"><b>Tool reference →</b><span>All 11 tools with parameters and real responses.</span></a>
+          <a href="#tools" class="doc-card"><b>Tool reference →</b><span>All 17 tools: 11 read-only, 6 for execution and approvals.</span></a>
           <a href="#policy" class="doc-card"><b>Policy engine →</b><span>How allow / approve / deny decisions are made.</span></a>
         </div>
         <figure class="shot">
@@ -187,18 +195,21 @@
 
       <section id="quickstart" class="doc-sec">
         <h2>Quick start</h2>
-        <p>Requirements: <strong>Node.js 18.17+</strong> and git. No API keys and no wallet needed: every tool available today is read-only.</p>
+        <p>Requirements: <strong>Node.js 18.17+</strong> and git. No API keys needed. The 11 read-only tools work without a wallet; the execution tools need an agent wallet (see <a href="#execution">Execution &amp; approvals</a>).</p>
         <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
 <pre><code><span class="c"># 1. get the code</span>
 git clone https://github.com/&lt;you&gt;/leeway-mcp
 cd leeway-mcp/server
 
-<span class="c"># 2. install (two dependencies: MCP SDK + zod)</span>
+<span class="c"># 2. install (three dependencies: MCP SDK, zod, viem)</span>
 npm install
 
-<span class="c"># 3. verify: spawns the server and calls every tool against live data</span>
-npm test</code></pre></div>
-        <p>You should see all eleven tools respond, ending with <code>all calls completed</code>:</p>
+<span class="c"># 3. verify: spawns the server and calls every read tool against live data</span>
+npm test
+
+<span class="c"># 4. execution, approvals, x402 and HTTP against a local merchant (no real funds)</span>
+node test/execution.js</code></pre></div>
+        <p>You should see the tool list and every read tool respond, ending with <code>all calls completed</code>. The execution test ends with <code>all execution checks passed</code>.</p>
         <figure class="shot shot--tight">
           <img src="docs/img/npm-test.jpg" alt="Terminal output of npm test showing live prices, gas, balances and a token risk scan" loading="lazy" />
           <figcaption>Real output of <code>npm test</code>: live ETH/TAO/BTC prices, Base gas, a wallet balance, a USDC risk scan, and input validation rejecting a bad address.</figcaption>
@@ -231,7 +242,7 @@ npm test</code></pre></div>
     }
   }
 }</code></pre></div>
-            <p>Restart the app. "leeway" with 11 tools appears in the tools menu.</p>
+            <p>Restart the app. "leeway" with 17 tools appears in the tools menu.</p>
           </div>
           <div class="tabs__panel" data-panel="code">
             <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
@@ -261,7 +272,7 @@ npm test</code></pre></div>
 
       <section id="tools" class="doc-sec">
         <h2>Tool reference</h2>
-        <p>Every tool returns JSON as text content. Errors come back with <code>isError: true</code> and a readable message, so the agent can recover. Tools marked <span class="pill pill--ro">read-only</span> never move funds.</p>
+        <p>Every tool returns JSON as text content. Errors come back with <code>isError: true</code> and a readable message, so the agent can recover. Tools marked <span class="pill pill--ro">read-only</span> never move funds; tools marked <span class="pill pill--gold">write · policy-gated</span> can, only through the <a href="#execution">execution gate</a>.</p>
         <figure class="shot shot--tight">
           <img src="docs/img/landing-tools.jpg" alt="Tool catalog on the landing page showing live and upcoming tools" loading="lazy" />
           <figcaption>The tool catalog on the landing page. <span class="g">● live</span> tools are documented below; the rest are on the roadmap.</figcaption>
@@ -388,7 +399,7 @@ npm test</code></pre></div>
 
         <article class="tool-doc" id="t-x402_quote">
           <header><h3><code>x402_quote</code></h3><span class="pill pill--ro">read-only</span><span class="pill">payments</span></header>
-          <p>Requests a URL. If the server answers <code>HTTP 402 Payment Required</code> using the x402 protocol, Leeway parses the payment options (scheme, network, asset, pay-to address, amount) and returns the policy decision for the cheapest one. <strong>It does not pay.</strong> Settlement is on the roadmap.</p>
+          <p>Requests a URL. If the server answers <code>HTTP 402 Payment Required</code> using the x402 protocol, Leeway parses the payment options (scheme, network, asset, pay-to address, amount) and returns the policy decision for the cheapest one. <strong>It does not pay.</strong> To pay, use <a href="#t-x402_pay"><code>x402_pay</code></a>.</p>
           <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code> <i>required</i></td><td>URL</td><td>Resource to quote</td></tr></tbody></table>
           <div class="code"><div class="code__bar"><em>response · paywalled resource</em></div><pre><code>{ <span class="k">"status"</span>: 402, <span class="k">"paywalled"</span>: true, <span class="k">"x402_version"</span>: 1,
   <span class="k">"options"</span>: [{ <span class="k">"scheme"</span>: <span class="s">"exact"</span>, <span class="k">"network"</span>: <span class="s">"base"</span>, <span class="k">"amount_usd"</span>: 0.02, <span class="k">"pay_to"</span>: <span class="s">"0x…"</span> }],
@@ -400,6 +411,81 @@ npm test</code></pre></div>
           <p>Today's spend (UTC day), the remaining budget, ledger entries and the active policy limits. No parameters.</p>
           <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"day"</span>: <span class="s">"2026-11-20"</span>, <span class="k">"spentUsd"</span>: 0, <span class="k">"remainingUsd"</span>: 50, <span class="k">"entries"</span>: [],
   <span class="k">"policy"</span>: { <span class="k">"dailyLimitUsd"</span>: 50, <span class="k">"perTxLimitUsd"</span>: 25, <span class="k">"hardCapUsd"</span>: 500, <span class="k">"microAllowanceUsd"</span>: 1, <span class="k">"requireApproval"</span>: true } }</code></pre></div>
+        </article>
+
+        <h3 id="t-execution">Execution tools <span class="fade">(new in 0.3)</span></h3>
+        <p>These six tools are the only ones that can move funds or touch approvals. Every action goes through the same gate: simulation on live state, the policy engine, a human approval when the policy asks for one, then signing. They run only on chains the owner enabled (default <code>base-sepolia</code>). See <a href="#execution">Execution &amp; approvals</a>.</p>
+
+        <article class="tool-doc" id="t-wallet_info">
+          <header><h3><code>wallet_info</code></h3><span class="pill pill--ro">read-only</span><span class="pill pill--gold">execution</span></header>
+          <p>The agent wallet address, where it may execute, its native balance on each enabled chain, and how approvals reach the owner. Never returns key material. No parameters.</p>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"configured"</span>: true, <span class="k">"address"</span>: <span class="s">"0xB6c6…445a"</span>, <span class="k">"key_source"</span>: <span class="s">"file"</span>,
+  <span class="k">"execution_enabled"</span>: true, <span class="k">"execution_chains"</span>: [<span class="s">"base-sepolia"</span>],
+  <span class="k">"balances"</span>: [{ <span class="k">"chain"</span>: <span class="s">"base-sepolia"</span>, <span class="k">"testnet"</span>: true, <span class="k">"balance"</span>: <span class="s">"0.05"</span>, <span class="k">"symbol"</span>: <span class="s">"ETH"</span> }],
+  <span class="k">"approvals"</span>: <span class="s">"telegram + cli"</span> }</code></pre></div>
+          <p>Without a wallet it returns <code>{ "configured": false }</code> with the setup command for the owner.</p>
+        </article>
+
+        <article class="tool-doc" id="t-send_transaction">
+          <header><h3><code>send_transaction</code></h3><span class="pill pill--gold">write · policy-gated</span><span class="pill">execution</span></header>
+          <p>Sends a transaction from the agent wallet. It is simulated first with <code>simulate_tx</code> and blocked if it would revert or looks malicious (<code>WILL_REVERT</code>, <code>DO_NOT_SIGN</code>). Then the policy engine decides. If a human must approve, the tool returns <code>pending_approval</code> with an <code>approval_id</code>; once the owner approves, the agent calls it again with the same arguments plus <code>approval_id</code>. Simulation warnings (verdict <code>REVIEW</code>) also require approval.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody>
+            <tr><td><code>chain</code></td><td>enum</td><td>Default <code>base-sepolia</code>. Must be in <code>LEEWAY_EXECUTION_CHAINS</code></td></tr>
+            <tr><td><code>to</code> <i>required</i></td><td>0x…</td><td>Recipient wallet or contract</td></tr>
+            <tr><td><code>value</code></td><td>decimal string</td><td>Native amount in whole units. Default <code>"0"</code></td></tr>
+            <tr><td><code>data</code></td><td>hex</td><td>Calldata. Default <code>"0x"</code> (plain transfer)</td></tr>
+            <tr><td><code>approval_id</code></td><td>6 hex chars</td><td>An approval the owner granted for exactly these arguments</td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response · sent</em></div><pre><code>{ <span class="k">"status"</span>: <span class="s">"sent"</span>, <span class="k">"hash"</span>: <span class="s">"0x9f3c…e21a"</span>, <span class="k">"onchain_status"</span>: <span class="s">"confirmed"</span>, <span class="k">"block"</span>: 19204411, <span class="k">"gas_used"</span>: 21000,
+  <span class="k">"explorer"</span>: <span class="s">"https://sepolia.basescan.org/tx/0x9f3c…e21a"</span>, <span class="k">"value_usd"</span>: 0.85, <span class="k">"approved_by"</span>: <span class="s">"policy"</span> }</code></pre></div>
+          <div class="code"><div class="code__bar"><em>response · blocked by simulation</em></div><pre><code>{ <span class="k">"status"</span>: <span class="s">"blocked"</span>, <span class="k">"reason"</span>: <span class="s">"WILL_REVERT"</span>, <span class="k">"simulation"</span>: { <span class="k">"revert_reason"</span>: <span class="s">"EVM error: OutOfFunds"</span>, … } }</code></pre></div>
+          <p><code>onchain_status</code> comes from the receipt: <code>confirmed</code>, <code>reverted</code>, or <code>pending</code> if no receipt arrived within 45 seconds. The spend is written to the ledger as soon as the transaction is broadcast.</p>
+          <p class="ask">Ask: <i>"Send 0.001 test ETH to 0x2222…2222 on Base Sepolia."</i></p>
+        </article>
+
+        <article class="tool-doc" id="t-execute_swap">
+          <header><h3><code>execute_swap</code></h3><span class="pill pill--gold">write · policy-gated</span><span class="pill">trading</span></header>
+          <p>Swaps the native token for another token at the best DEX route. It runs <code>swap_quote</code> with the agent wallet as sender (price impact, token risk, policy, simulation), goes through the approval flow, then rebuilds the route right before sending so the price is fresh; <code>min_out</code> still protects the trade. <strong>Only native-token sells are enabled for now</strong>: selling an ERC-20 needs an allowance step, which ships next. Swap routes come from KyberSwap, which does not cover testnets, so this tool needs a mainnet chain the owner opted in to.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody>
+            <tr><td><code>chain</code></td><td>enum</td><td>Default <code>base-sepolia</code>; in practice a mainnet listed in <code>LEEWAY_EXECUTION_CHAINS</code></td></tr>
+            <tr><td><code>sell</code> <i>required</i></td><td>string</td><td>Native token symbol, e.g. <code>ETH</code></td></tr>
+            <tr><td><code>buy</code> <i>required</i></td><td>string</td><td>Symbol or contract address</td></tr>
+            <tr><td><code>amount</code> <i>required</i></td><td>decimal string</td><td>Amount to sell in whole units</td></tr>
+            <tr><td><code>slippage_bps</code></td><td>int 1–300</td><td>Default <code>50</code> (0.5%)</td></tr>
+            <tr><td><code>approval_id</code></td><td>6 hex chars</td><td>Approval granted for exactly these arguments</td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response · sent</em></div><pre><code>{ <span class="k">"status"</span>: <span class="s">"sent"</span>, <span class="k">"hash"</span>: <span class="s">"0x41d0…77b2"</span>, <span class="k">"sold"</span>: { <span class="k">"symbol"</span>: <span class="s">"ETH"</span>, <span class="k">"amount"</span>: <span class="s">"0.01"</span> },
+  <span class="k">"bought_min"</span>: <span class="s">"16.98"</span>, <span class="k">"symbol"</span>: <span class="s">"USDC"</span>, <span class="k">"approved_by"</span>: <span class="s">"3F9A1C"</span> }</code></pre></div>
+          <p>The approval is bound to <code>chain</code>, <code>sell</code>, <code>buy</code>, <code>amount</code> and <code>slippage_bps</code>, not to the calldata, because the route is rebuilt before sending.</p>
+        </article>
+
+        <article class="tool-doc" id="t-x402_pay">
+          <header><h3><code>x402_pay</code></h3><span class="pill pill--gold">write · policy-gated</span><span class="pill">payments</span></header>
+          <p>Fetches a URL. If it answers <code>HTTP 402</code>, Leeway picks a supported option (scheme <code>exact</code>, USDC on Base or Base Sepolia), checks <code>max_usd</code> and the policy, signs an EIP-3009 <code>TransferWithAuthorization</code> with the agent wallet, retries the request with the payment, and returns the paid content plus the settlement receipt. The merchant's facilitator submits the transfer on-chain; the agent pays no gas.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody>
+            <tr><td><code>url</code> <i>required</i></td><td>URL</td><td>Resource to fetch and pay for</td></tr>
+            <tr><td><code>max_usd</code></td><td>number ≤ 1000</td><td>Refuse if the price is above this</td></tr>
+            <tr><td><code>approval_id</code></td><td>6 hex chars</td><td>Approval granted for exactly this payment</td></tr></tbody></table>
+          <table class="params"><thead><tr><th>Protocol</th><th>Requirements arrive in</th><th>Payment sent in</th><th>Receipt in</th></tr></thead><tbody>
+            <tr><td>x402 v1</td><td>JSON body (<code>maxAmountRequired</code>, network <code>base-sepolia</code>)</td><td><code>X-PAYMENT</code> header, base64 JSON</td><td><code>X-PAYMENT-RESPONSE</code></td></tr>
+            <tr><td>x402 v2</td><td><code>PAYMENT-REQUIRED</code> header, base64 (<code>amount</code>, network <code>eip155:84532</code>)</td><td><code>PAYMENT-SIGNATURE</code> header, base64 JSON</td><td><code>PAYMENT-RESPONSE</code></td></tr></tbody></table>
+          <p>The EIP-712 domain (<code>name</code>, <code>version</code>) is read from the token contract itself, not from the 402 response: USDC on Base mainnet signs as <code>"USD Coin"</code>, on Base Sepolia as <code>"USDC"</code>, both version <code>"2"</code>. A signature with the wrong name would be rejected by the token. Each authorization uses a random 32-byte nonce and is valid for the merchant's <code>maxTimeoutSeconds</code>.</p>
+          <div class="code"><div class="code__bar"><em>response · paid</em></div><pre><code>{ <span class="k">"status"</span>: <span class="s">"paid"</span>, <span class="k">"http_status"</span>: 200, <span class="k">"amount_usd"</span>: 0.02, <span class="k">"network"</span>: <span class="s">"base-sepolia"</span>, <span class="k">"pay_to"</span>: <span class="s">"0x2222…2222"</span>,
+  <span class="k">"receipt"</span>: { <span class="k">"success"</span>: true, <span class="k">"transaction"</span>: <span class="s">"0xabab…abab"</span>, <span class="k">"network"</span>: <span class="s">"base-sepolia"</span>, <span class="k">"payer"</span>: <span class="s">"0xB6c6…445a"</span> },
+  <span class="k">"approved_by"</span>: <span class="s">"policy"</span>, <span class="k">"content_type"</span>: <span class="s">"application/json"</span>, <span class="k">"body"</span>: <span class="s">"{\"city\":\"Dubai\",\"temp_c\":31}"</span> }</code></pre></div>
+          <p>Other statuses: <code>free</code> (no 402, body returned as is), <code>blocked</code> (no supported option, above <code>max_usd</code>, policy deny, or an invalid approval), <code>pending_approval</code> (see <a href="#execution">the approval flow</a>) and <code>payment_failed</code> (the merchant rejected the payment; nothing is recorded in the ledger).</p>
+          <p class="ask">Ask: <i>"Buy today's weather data for Dubai from api.meteo.xyz, max 5 cents."</i></p>
+        </article>
+
+        <article class="tool-doc" id="t-approval_status">
+          <header><h3><code>approval_status</code></h3><span class="pill pill--ro">read-only</span><span class="pill pill--gold">approvals</span></header>
+          <p>Status of one approval request: <code>pending</code>, <code>approved</code>, <code>denied</code> or <code>expired</code>. The agent can only read approvals; no tool can grant one.</p>
+          <table class="params"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>approval_id</code> <i>required</i></td><td>6 hex chars</td><td>Id returned with <code>pending_approval</code></td></tr></tbody></table>
+          <div class="code"><div class="code__bar"><em>response</em></div><pre><code>{ <span class="k">"id"</span>: <span class="s">"3F9A1C"</span>, <span class="k">"status"</span>: <span class="s">"approved"</span>, <span class="k">"kind"</span>: <span class="s">"x402"</span>, <span class="k">"summary"</span>: <span class="s">"Pay $5 USDC to api.meteo.xyz for …"</span>, <span class="k">"value_usd"</span>: 5,
+  <span class="k">"reasons"</span>: [<span class="s">"owner requires approval for non-micro spends"</span>], <span class="k">"expires_at"</span>: <span class="s">"2026-11-24T12:15:00.000Z"</span>, <span class="k">"decided_by"</span>: <span class="s">"telegram:owner"</span> }</code></pre></div>
+        </article>
+
+        <article class="tool-doc" id="t-list_approvals">
+          <header><h3><code>list_approvals</code></h3><span class="pill pill--ro">read-only</span><span class="pill pill--gold">approvals</span></header>
+          <p>The 20 most recent approval requests, newest first, in the same shape as <code>approval_status</code>. No parameters.</p>
         </article>
       </section>
 
@@ -421,6 +507,20 @@ npm test</code></pre></div>
           <tr><td><code>LEEWAY_DENYLIST</code></td><td>(empty)</td><td>Always denied</td></tr>
           <tr><td><code>LEEWAY_REQUIRE_APPROVAL</code></td><td>true</td><td>Require approval for every non-micro spend</td></tr>
           <tr><td><code>LEEWAY_LEDGER</code></td><td>~/.leeway-mcp/ledger.json</td><td>Where the daily spend ledger is stored</td></tr>
+        </tbody></table>
+        <h3>Execution, approvals and HTTP</h3>
+        <table class="params"><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+          <tr><td><code>LEEWAY_AGENT_KEY</code></td><td>(unset)</td><td>Agent wallet private key (0x + 64 hex). Overrides the key file</td></tr>
+          <tr><td><code>LEEWAY_AGENT_KEY_FILE</code></td><td>~/.leeway-mcp/agent-key.json</td><td>Key file created by <code>init-wallet</code> (mode 600)</td></tr>
+          <tr><td><code>LEEWAY_EXECUTION</code></td><td>on</td><td><code>off</code> disables every execution tool</td></tr>
+          <tr><td><code>LEEWAY_EXECUTION_CHAINS</code></td><td>base-sepolia</td><td>Comma-separated chains where the agent may sign. Mainnets are opt-in</td></tr>
+          <tr><td><code>LEEWAY_APPROVALS</code></td><td>~/.leeway-mcp/approvals.json</td><td>Where approval requests are stored</td></tr>
+          <tr><td><code>LEEWAY_APPROVAL_TTL_MIN</code></td><td>15</td><td>Minutes before an undecided request expires</td></tr>
+          <tr><td><code>LEEWAY_TELEGRAM_BOT_TOKEN</code></td><td>(unset)</td><td>Bot token from @BotFather, enables Telegram approvals</td></tr>
+          <tr><td><code>LEEWAY_TELEGRAM_CHAT_ID</code></td><td>(unset)</td><td>The only chat whose button presses are accepted</td></tr>
+          <tr><td><code>LEEWAY_HTTP_TOKEN</code></td><td>(unset)</td><td>Bearer token for <code>POST /mcp</code> in HTTP mode (16+ chars, required)</td></tr>
+          <tr><td><code>LEEWAY_ADMIN_TOKEN</code></td><td>(unset)</td><td>Bearer token for the approval endpoints. Must differ from the agent token</td></tr>
+          <tr><td><code>LEEWAY_HTTP_HOST</code></td><td>127.0.0.1</td><td>Bind address in HTTP mode (also <code>--host</code>; port via <code>--port</code> or <code>PORT</code>, default 3333)</td></tr>
         </tbody></table>
         <h3>Recommended profiles</h3>
         <div class="profiles">
@@ -477,6 +577,54 @@ npm test</code></pre></div>
         <p>Approved spends are written to a JSON ledger (<code>~/.leeway-mcp/ledger.json</code>) that resets every UTC day. Restarting the server or the client doesn't reset the budget.</p>
       </section>
 
+      <section id="execution" class="doc-sec">
+        <h2>Execution &amp; approvals <span class="fade">(v0.3)</span></h2>
+        <p>From v0.3 an agent can act, not just read: send transactions, swap and pay x402 merchants from its own small wallet. There is exactly one code path that signs (<code>server/src/execute.js</code>), and every action passes the same gate in order:</p>
+        <ol class="steps">
+          <li><b>Simulate.</b> The transaction is dry-run on live state with <code>simulate_tx</code>. Anything that would revert or trips a high-severity warning (drainer approval, flagged counterparty) is blocked before it can be signed.</li>
+          <li><b>Policy.</b> The policy engine decides on the USD value leaving the wallet: <code>allow</code>, <code>needs_approval</code> or <code>deny</code>. Deny is final.</li>
+          <li><b>Human approval.</b> If the policy asks for a human, or the simulation raised medium warnings, the action is parked as an approval request and the owner is notified.</li>
+          <li><b>Sign and send.</b> Only then does the wallet sign and broadcast.</li>
+          <li><b>Ledger.</b> The spend is recorded, so daily limits hold across restarts.</li>
+        </ol>
+
+        <h3>Opt-in chains</h3>
+        <p>Execution runs only on chains listed in <code>LEEWAY_EXECUTION_CHAINS</code>. The default is <code>base-sepolia</code>, a testnet: nothing real can be spent until the owner opts in to a mainnet explicitly, for example <code>LEEWAY_EXECUTION_CHAINS=base-sepolia,base</code>. <code>LEEWAY_EXECUTION=off</code> disables execution entirely and leaves the read-only tools working. Test ETH is still valued at the ETH price, so limits behave on testnet exactly as they would on mainnet.</p>
+
+        <h3>The agent wallet</h3>
+        <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
+<pre><code>npx leeway-mcp init-wallet
+<span class="c"># Created a new agent wallet.</span>
+<span class="c">#   address   0xB6c6…445a</span>
+<span class="c">#   key file  ~/.leeway-mcp/agent-key.json  (keep it private; it never leaves this machine)</span>
+<span class="c">#   executes  base-sepolia  (LEEWAY_EXECUTION_CHAINS)</span></code></pre></div>
+        <p>The key is stored in <code>~/.leeway-mcp/agent-key.json</code> with file mode 600 (or passed as <code>LEEWAY_AGENT_KEY</code>). No tool returns it and it is never logged; <code>wallet_info</code> shows only the address. Treat it as a hot wallet: fund it with what you are willing to let the agent spend, not your savings. For testing, use Base Sepolia ETH and USDC from a faucet.</p>
+
+        <h3>Approvals</h3>
+        <p>An approval request is bound to a SHA-256 hash of the exact action parameters (chain, recipient, value, calldata; or URL, payee, asset and amount for x402). It can be used once and expires after 15 minutes (<code>LEEWAY_APPROVAL_TTL_MIN</code>). An approved $5 payment therefore cannot be swapped for a $500 one or replayed. The agent has <strong>no tool that can approve</strong>: it can only read the status.</p>
+        <div class="threats">
+          <div><b>Telegram</b><span>Set <code>LEEWAY_TELEGRAM_BOT_TOKEN</code> and <code>LEEWAY_TELEGRAM_CHAT_ID</code>. Each request arrives as a message with Approve / Deny buttons. Only callbacks from that chat are accepted.</span></div>
+          <div><b>CLI</b><span><code>npx leeway-mcp approvals</code> lists requests; <code>npx leeway-mcp approve &lt;id&gt;</code> or <code>deny &lt;id&gt;</code> decides. Works with no extra setup.</span></div>
+          <div><b>Admin HTTP</b><span><code>POST /approvals/&lt;id&gt;/approve</code> (or <code>/deny</code>) with <code>Authorization: Bearer $LEEWAY_ADMIN_TOKEN</code>. The admin token must differ from the agent token; the server refuses to start otherwise.</span></div>
+          <div><b>Expiry</b><span>Undecided requests expire. A pending, denied, expired or already-used approval makes the tool return <code>blocked</code> with the reason.</span></div>
+        </div>
+
+        <h3>A full flow</h3>
+        <div class="code"><div class="code__bar"><em>x402_pay with a $5 price (above the $1 micro allowance)</em></div>
+<pre><code><span class="c">// 1 · agent → x402_pay({ url: "https://api.meteo.xyz/v1/forecast" })</span>
+{ <span class="k">"status"</span>: <span class="s">"pending_approval"</span>, <span class="k">"approval_id"</span>: <span class="s">"3F9A1C"</span>, <span class="k">"expires_at"</span>: <span class="s">"2026-11-24T12:15:00.000Z"</span>,
+  <span class="k">"reasons"</span>: [<span class="s">"owner requires approval for non-micro spends"</span>], <span class="k">"notified_via"</span>: <span class="s">"telegram"</span>,
+  <span class="k">"next"</span>: <span class="s">"Ask the owner to approve (…), then call this tool again with the same arguments and approval_id"</span> }
+
+<span class="c">// 2 · owner taps ✅ Approve in Telegram   (or: npx leeway-mcp approve 3F9A1C)</span>
+
+<span class="c">// 3 · agent → x402_pay({ url: "https://api.meteo.xyz/v1/forecast", approval_id: "3F9A1C" })</span>
+{ <span class="k">"status"</span>: <span class="s">"paid"</span>, <span class="k">"amount_usd"</span>: 5, <span class="k">"approved_by"</span>: <span class="s">"3F9A1C"</span>, <span class="k">"receipt"</span>: { <span class="k">"success"</span>: true, … }, <span class="k">"body"</span>: <span class="s">"…"</span> }
+
+<span class="c">// 4 · the same approval_id again → { "status": "blocked", "reason": "approval 3F9A1C was already used" }</span></code></pre></div>
+        <p>Every step of this flow, including the replay and wrong-parameter cases, is covered by <code>server/test/execution.js</code> against a local x402 merchant that verifies the EIP-3009 signature.</p>
+      </section>
+
       <section id="x402" class="doc-sec">
         <h2>x402 payments</h2>
         <p><strong>x402</strong> revives the long-unused <code>HTTP 402 Payment Required</code> status code for machine payments. Instead of API keys and monthly plans, a server answers 402 with a price, the client pays a few cents in a stablecoin, and retries the request with a payment proof. This fits AI agents well: no sign-ups, pay per use, settled on-chain.</p>
@@ -489,12 +637,41 @@ npm test</code></pre></div>
               <path d="M120 66 H732" stroke="#9fb4ff" marker-end="url(#arr)"/><text x="430" y="58" text-anchor="middle">1 · GET /v1/weather/dubai</text>
               <path d="M740 106 H128" stroke="#e7b94f" marker-end="url(#arr)"/><text x="430" y="98" text-anchor="middle">2 · 402 Payment Required · 0.02 USDC on Base</text>
               <rect x="150" y="122" width="300" height="40" rx="6" fill="#120f09" stroke="#e7b94f"/><text x="300" y="147" text-anchor="middle" fill="#fbe7a1">3 · policy_check → allow (micro)</text>
-              <path d="M120 194 H732" stroke="#9fb4ff" marker-end="url(#arr)"/><text x="430" y="186" text-anchor="middle">4 · retry with X-PAYMENT header (signed)</text>
+              <path d="M120 194 H732" stroke="#9fb4ff" marker-end="url(#arr)"/><text x="430" y="186" text-anchor="middle">4 · retry with X-PAYMENT / PAYMENT-SIGNATURE (signed)</text>
               <path d="M740 234 H128" stroke="#21d36b" marker-end="url(#arr)"/><text x="430" y="226" text-anchor="middle">5 · 200 OK + data · settled on-chain</text>
             </g>
           </svg>
-          <figcaption>Steps 1–3 are live today via <code>x402_quote</code>. Steps 4–5 (signing and settlement) arrive with agent wallets.</figcaption>
+          <figcaption>All five steps run in <code>x402_pay</code>: the price is checked against the policy, the agent wallet signs an EIP-3009 authorization, and the merchant settles it on-chain. <code>x402_quote</code> stops after step 3.</figcaption>
         </figure>
+      </section>
+
+      <section id="http" class="doc-sec">
+        <h2>Remote agents <span class="fade">(HTTP)</span></h2>
+        <p>Besides stdio, Leeway can serve MCP over Streamable HTTP, for agents that run on another machine or in the cloud. The server is stateless: every request to <code>POST /mcp</code> gets a fresh MCP server instance.</p>
+        <div class="code"><div class="code__bar"><em>terminal</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
+<pre><code>LEEWAY_HTTP_TOKEN=$(openssl rand -hex 24) \
+LEEWAY_ADMIN_TOKEN=$(openssl rand -hex 24) \
+npx leeway-mcp http --port 3333
+<span class="c"># [leeway-mcp] v0.3.0 ready over http://127.0.0.1:3333/mcp · wallet 0xB6c6…445a · execution base-sepolia</span></code></pre></div>
+        <table class="params"><thead><tr><th>Endpoint</th><th>Auth</th><th>Purpose</th></tr></thead><tbody>
+          <tr><td><code>POST /mcp</code></td><td>Bearer <code>LEEWAY_HTTP_TOKEN</code></td><td>MCP JSON-RPC (Streamable HTTP). Other methods return 405</td></tr>
+          <tr><td><code>GET /health</code></td><td>none</td><td><code>{ "ok": true, "name": "leeway-mcp", "version": "0.3.0" }</code></td></tr>
+          <tr><td><code>GET /approvals</code></td><td>Bearer <code>LEEWAY_ADMIN_TOKEN</code></td><td>Recent approval requests</td></tr>
+          <tr><td><code>POST /approvals/&lt;id&gt;/approve</code> · <code>/deny</code></td><td>Bearer <code>LEEWAY_ADMIN_TOKEN</code></td><td>Owner decision</td></tr></tbody></table>
+        <ul>
+          <li>It binds to <code>127.0.0.1</code> by default. Use <code>--host 0.0.0.0</code> (or <code>LEEWAY_HTTP_HOST</code>) only behind TLS, for example a reverse proxy.</li>
+          <li><code>LEEWAY_HTTP_TOKEN</code> is required and must be at least 16 characters; the server will not start without it.</li>
+          <li>The admin endpoints are disabled unless <code>LEEWAY_ADMIN_TOKEN</code> is set, and it must differ from the agent token, so the agent can never approve its own spends.</li>
+        </ul>
+        <div class="code"><div class="code__bar"><em>client config (any MCP client with Streamable HTTP)</em><button class="copy copy--sm" data-copy-next>Copy</button></div>
+<pre><code>{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"leeway"</span>: {
+      <span class="k">"url"</span>: <span class="s">"https://leeway.your-host.example/mcp"</span>,
+      <span class="k">"headers"</span>: { <span class="k">"Authorization"</span>: <span class="s">"Bearer &lt;LEEWAY_HTTP_TOKEN&gt;"</span> }
+    }
+  }
+}</code></pre></div>
       </section>
 
       <section id="security" class="doc-sec">
@@ -504,7 +681,11 @@ npm test</code></pre></div>
           <div><b>Malicious tokens</b><span><code>scan_token</code> flags honeypots, mint authority, taxes and unlocked LP before a buy.</span></div>
           <div><b>Drainer addresses</b><span>Recipients are reputation-checked inside <code>policy_check</code>. Flagged means deny.</span></div>
           <div><b>Bad input</b><span>JSON-schema validation rejects malformed addresses, unknown chains and negative amounts.</span></div>
-          <div><b>Key exposure</b><span>v0.1 holds no keys at all. Future agent wallets use scoped session keys, never your main key.</span></div>
+          <div><b>Key exposure</b><span>The agent wallet key lives in a mode-600 file or an env var on your machine. No tool returns it; <code>wallet_info</code> shows only the address.</span></div>
+          <div><b>Hot wallet</b><span>The agent spends from its own small wallet, never your main one. Fund it with what you are willing to risk; mainnets are opt-in per chain.</span></div>
+          <div><b>Self-approval</b><span>No tool can approve. Approvals come from Telegram (one chat only), the CLI, or an admin token the agent never sees.</span></div>
+          <div><b>Swapped or replayed actions</b><span>An approval is bound to a hash of the exact parameters, is single-use and expires in 15 minutes.</span></div>
+          <div><b>Blind signing</b><span>Every transaction is simulated before signing; reverts and drainer patterns are blocked outright.</span></div>
           <div><b>Third-party data</b><span>Data sources can be wrong or down. Leeway reports errors explicitly and the agent should treat "unknown" as risky.</span></div>
         </div>
         <div class="callout callout--warn"><b>Disclaimer</b> Leeway reduces risk but cannot remove it. Risk scores come from third-party heuristics. This is not financial advice; you are responsible for funds your agents control.</div>
@@ -545,8 +726,8 @@ npm test</code></pre></div>
         <h2>Roadmap</h2>
         <ul class="road">
           <li class="done"><em>Phase 1 · Q3 2026</em><b>Genesis</b>Market and wallet tools on 7 EVM chains, stdio transport, MIT license.</li>
-          <li class="now"><em>Phase 2 · Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓, docs &amp; live playground ✓, guarded swap quotes ✓, pre-sign transaction simulation ✓. Next: npm publish and MCP registries.</li>
-          <li><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>ERC-4337 agent wallets with session keys, x402 settlement, Telegram approvals, HTTP transport, security audit #1.</li>
+          <li class="done"><em>Phase 2 · Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓, docs &amp; live playground ✓, guarded swap quotes ✓, pre-sign transaction simulation ✓. Still to do: npm publish and MCP registries, once the GitHub account is set up.</li>
+          <li class="now"><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>Agent wallet ✓, policy-gated execution ✓, x402 settlement in USDC ✓, Telegram / CLI / HTTP approvals ✓, HTTP transport ✓. Next: ERC-4337 smart accounts with scoped session keys, ERC-20 sells with exact allowances, email approvals, security audit #1.</li>
           <li><em>Phase 4 · Q1–Q2 2027</em><b>Equity Rails</b>Tokenized stock quotes, Parity Guard, market-hours and corporate-action awareness, equity guardrails, read-only brokerage sync. See <a href="#equities">Equity Rails</a>.</li>
           <li><em>Phase 5 · Q2 2027</em><b>Token generation</b>Audit #2, LWAY TGE on Base (fair launch), DEX liquidity on Uniswap v4 &amp; Aerodrome with LP locked 12 months, CoinGecko / CoinMarketCap applications, sLWAY staking.</li>
           <li><em>Phase 6 · Q3 2027</em><b>Gateway network</b>Hosted gateway and node operators, x402 fee share, Solana support, tier-2 exchange listings.</li>
@@ -556,8 +737,8 @@ npm test</code></pre></div>
 
       <section id="faq" class="doc-sec">
         <h2>FAQ</h2>
-        <details><summary>Do I need an API key or wallet?</summary><p>No. All current tools use free public endpoints and are read-only.</p></details>
-        <details><summary>Can my agent actually move money today?</summary><p>Not yet, and that is deliberate. v0.2 provides market intelligence, risk checks, guarded swap quotes, transaction simulation and policy decisions. Execution (agent wallets that sign, x402 settlement) ships next, on top of the same policy engine.</p></details>
+        <details><summary>Do I need an API key or wallet?</summary><p>No API keys: everything runs on free public endpoints. The 11 read-only tools need no wallet. To let the agent act, the owner creates a small agent wallet with <code>npx leeway-mcp init-wallet</code>.</p></details>
+        <details><summary>Can my agent actually move money today?</summary><p>Yes, from v0.3, within limits. It can send transactions, swap the native token and pay x402 merchants from its own wallet, and only after simulation, the policy engine and, when the policy asks, your approval. By default it can do this only on the Base Sepolia testnet; mainnets are opt-in through <code>LEEWAY_EXECUTION_CHAINS</code>.</p></details>
         <details><summary>Which AI models work with it?</summary><p>Any model behind an MCP-capable client: Claude (Desktop, Code), Cursor, Windsurf, Zed, Cline, the OpenAI Agents SDK, or your own agent built on the MCP SDK.</p></details>
         <details><summary>Is my data sent anywhere?</summary><p>Only the queries a tool needs: token ids to CoinGecko, addresses to the RPC and GoPlus. Leeway has no telemetry.</p></details>
         <details><summary>What happens when a data source is down?</summary><p>The tool returns <code>isError: true</code> with the reason. Requests time out after 12 seconds, so the agent is never left hanging.</p></details>
@@ -566,8 +747,8 @@ npm test</code></pre></div>
 
       <section id="contributing" class="doc-sec">
         <h2>Contributing</h2>
-        <p>Leeway is MIT-licensed and contributions are welcome. A new tool is about 20 lines: register it in <code>server/src/index.js</code> with a zod schema and a handler, put data access in <code>data.js</code>, and add a call to <code>test/smoke.js</code>.</p>
-        <div class="code"><div class="code__bar"><em>server/src/index.js</em></div>
+        <p>Leeway is MIT-licensed and contributions are welcome. A new tool is about 20 lines: register it inside <code>createServer()</code> in <code>server/src/tools.js</code> with a zod schema and a handler, put data access in <code>data.js</code>, and add a call to <code>test/smoke.js</code>. Anything that signs must go through <code>execute.js</code>.</p>
+        <div class="code"><div class="code__bar"><em>server/src/tools.js</em></div>
 <pre><code>server.registerTool(<span class="s">'my_tool'</span>, {
   title: <span class="s">'My tool'</span>,
   description: <span class="s">'What it does and when the agent should use it.'</span>,

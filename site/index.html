@@ -65,13 +65,13 @@
           <div class="hero__copy">
             <p class="hero__eyebrow reveal">Give your agents leeway, not a private key.</p>
             <h1 class="hero__title reveal" data-split>The Future of the Agent Economy Starts Here</h1>
-            <p class="hero__lead reveal">An open-source MCP server that lets Claude, Cursor and any AI agent read markets, scan risk and price x402 payments, all behind a policy engine you control.</p>
+            <p class="hero__lead reveal">An open-source MCP server that lets Claude, Cursor and any AI agent read markets, scan risk, simulate and pay, with every spend checked by a policy engine you control.</p>
             <div class="hero__actions reveal">
               <a href="#playground" class="btn btn--gold">Try it live <i class="spark">✦</i></a>
               <a href="https://github.com/" target="_blank" rel="noopener" class="btn btn--ghost">View on GitHub <i>↗</i></a>
             </div>
             <div class="hero__meta reveal">
-              <div><b data-count="11">0</b><span>Live MCP tools</span></div>
+              <div><b data-count="17">0</b><span>Live MCP tools</span></div>
               <div><b data-count="7">0</b><span>EVM chains</span></div>
               <div><b>MIT</b><span>License</span></div>
             </div>
@@ -409,9 +409,9 @@
           <article class="why reveal">
             <span class="why__n">05</span>
             <div class="why__ico"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 15v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></div>
-            <h3>No keys, no accounts</h3>
-            <p>Runs on free public data: no API keys to leak, no sign-up, no telemetry. Every tool is read-only today, so the agent never holds a private key at all.</p>
-            <code class="why__proof">npx -y leeway-mcp</code>
+            <h3>The model never sees a key</h3>
+            <p>No API keys, no sign-up, no telemetry. The agent's small hot wallet lives inside the server, signs only on chains you enable, and every spend above your limits waits for your tap in Telegram.</p>
+            <code class="why__proof">approval 4E9496 · ✅ approved</code>
           </article>
           <article class="why reveal">
             <span class="why__n">06</span>
@@ -457,10 +457,10 @@
         </header>
 
         <div class="ascent-stats reveal">
-          <div><b>Phase 2</b><span>of 7 in progress</span></div>
-          <div><b data-count="13">0</b><span>milestones shipped</span></div>
+          <div><b>Phase 3</b><span>of 7 in progress</span></div>
+          <div><b data-count="18">0</b><span>milestones shipped</span></div>
           <div><b>Crypto + Stocks</b><span>one policy engine</span></div>
-          <div class="ascent-stats__bar"><span>Overall progress</span><i><em style="--p:31%"></em></i><small>31%</small></div>
+          <div class="ascent-stats__bar"><span>Overall progress</span><i><em style="--p:40%"></em></i><small>40%</small></div>
         </div>
 
         <div class="ascent" id="ascent">
@@ -476,24 +476,24 @@
             </div>
           </article>
 
-          <article class="stage is-now reveal">
+          <article class="stage is-done reveal">
             <div class="stage__node">02</div>
             <div class="stage__card">
-              <header><em>Q4 2026</em><span class="st st--now">In progress</span></header>
+              <header><em>Q4 2026</em><span class="st st--done">Shipped</span></header>
               <h3>Guardrails</h3>
               <p>Make agents safe to trust with money before they can touch it.</p>
-              <ul><li class="ok">Policy engine with persistent ledger</li><li class="ok">Token risk scanner &amp; address reputation</li><li class="ok">x402 payment quotes</li><li class="ok">Docs, live playground, policy simulator</li><li class="ok">Guarded swap quotes (DEX aggregator)</li><li class="ok">Pre-sign transaction simulation</li><li>npm publish · official MCP registry · Smithery</li></ul>
+              <ul><li class="ok">Policy engine with persistent ledger</li><li class="ok">Token risk scanner &amp; address reputation</li><li class="ok">x402 payment quotes</li><li class="ok">Docs, live playground, policy simulator</li><li class="ok">Guarded swap quotes (DEX aggregator)</li><li class="ok">Pre-sign transaction simulation</li><li>npm publish · official MCP registry · Smithery (ready, awaiting launch)</li></ul>
               <div class="stage__kpi"><span>KPI</span>1,000 GitHub stars · 500 weekly installs</div>
             </div>
           </article>
 
-          <article class="stage reveal">
+          <article class="stage is-now reveal">
             <div class="stage__node">03</div>
             <div class="stage__card">
-              <header><em>Q1 2027</em><span class="st">Next</span></header>
+              <header><em>Q4 2026 – Q1 2027</em><span class="st st--now">In progress</span></header>
               <h3>Wallets &amp; Payments</h3>
               <p>Agents act, inside limits you set.</p>
-              <ul><li>ERC-4337 agent wallets with scoped session keys</li><li>x402 settlement in USDC</li><li>Human approvals via Telegram &amp; email</li><li>HTTP / SSE transport for remote agents</li><li>Independent security audit #1</li></ul>
+              <ul><li class="ok">Agent wallet with policy-gated execution (testnet first)</li><li class="ok">x402 settlement in USDC (v1 + v2)</li><li class="ok">Human approvals via Telegram, CLI &amp; admin HTTP</li><li class="ok">Streamable HTTP transport for remote agents</li><li>ERC-4337 smart accounts with scoped session keys</li><li>Email approvals · ERC-20 sells with exact allowances</li><li>Independent security audit #1</li></ul>
               <div class="stage__kpi"><span>KPI</span>$1M agent volume under policy</div>
             </div>
           </article>

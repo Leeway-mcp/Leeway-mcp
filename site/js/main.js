@@ -145,8 +145,8 @@ const TOOLS = {
     ['get_balance', 'Native balance of any address on 7 EVM chains, valued in USD.', 'read'],
     ['get_portfolio', 'Cross-chain portfolio with PnL and allocation breakdown.', 'read'],
     ['tx_history', 'Decoded transaction history in human-readable form.', 'read'],
-    ['resolve_name', 'ENS / SNS / Basenames resolution in both directions.', 'read'],
-    ['create_agent_wallet', 'Spin up a policy-bound smart wallet for an agent.', 'write'],
+    ['approval_status', 'Pending, approved, denied or expired: the owner decides, never the agent.', 'read'],
+    ['wallet_info', 'Agent wallet address, enabled chains and balances. Never exposes the key.', 'read'],
     ['set_policy', 'Update spend limits, allowlists and approval rules.', 'write'],
   ],
   risk: [
@@ -160,22 +160,22 @@ const TOOLS = {
   trade: [
     ['swap_quote', 'Best DEX route with price impact, token risk and policy checks built in.', 'read'],
     ['simulate_tx', 'Dry-run any transaction on live state: assets out/in, approvals, revert reason.', 'read'],
-    ['execute_swap', 'Policy-checked execution with slippage guard.', 'write'],
+    ['execute_swap', 'Swap from the agent wallet: quoted, simulated, policy-checked, approved if needed.', 'write'],
     ['bridge_quote', 'Cross-chain routes compared on cost and time.', 'read'],
     ['limit_order', 'Place intent-based limit orders with expiry.', 'write'],
     ['revoke_approval', 'Find and revoke risky token allowances.', 'write'],
   ],
   pay: [
-    ['x402_fetch', 'Fetch a paywalled resource and settle the 402 in USDC automatically.', 'write'],
+    ['x402_pay', 'Pay a 402 resource in USDC (x402 v1 + v2) within policy and get the content back.', 'write'],
     ['x402_quote', 'Preview the price of a 402 resource before paying.', 'read'],
-    ['send_payment', 'Transfer stablecoins within policy limits.', 'write'],
+    ['send_transaction', 'Any transfer or call from the agent wallet: simulated, gated, signed.', 'write'],
     ['policy_check', 'Ask the policy engine: allow, needs approval or deny, with reasons.', 'read'],
     ['create_invoice', 'Let your agent sell its own services via x402.', 'write'],
     ['spending_report', 'Daily and weekly agent spend by tool and merchant.', 'read'],
   ],
 };
 // tools shipped in server/src/index.js today; the rest are on the roadmap
-const LIVE = new Set(['get_price', 'trending_tokens', 'get_gas', 'get_balance', 'scan_token', 'check_address', 'swap_quote', 'simulate_tx', 'policy_check', 'x402_quote', 'spending_report']);
+const LIVE = new Set(['get_price', 'trending_tokens', 'get_gas', 'get_balance', 'scan_token', 'check_address', 'swap_quote', 'simulate_tx', 'policy_check', 'x402_quote', 'spending_report', 'wallet_info', 'send_transaction', 'execute_swap', 'x402_pay', 'approval_status']);
 function renderTools(cat) {
   $('#toolList').innerHTML = TOOLS[cat].map(([n, d, t], i) =>
     `<div class="tool-item" style="animation-delay:${i * 0.05}s"><div class="tool-item__head"><code>${n}()</code>${LIVE.has(n) ? '<em class="live">● live</em>' : '<em>soon</em>'}</div><p>${d}</p><small class="${t === 'write' ? 'w' : ''}">${t === 'write' ? 'write · policy-guarded' : 'read-only'}</small></div>`).join('');
@@ -312,7 +312,7 @@ const DEMOS = [
     ['ok', '✓ 402 Payment Required · price 0.02 USDC · network base'],
     ['tool', '→ policy.check({ merchant: "meteo.xyz", value_usd: 0.02 })'],
     ['ok', '✓ within micro-payment allowance ($1/day)'],
-    ['tool', '→ <b>x402_fetch</b>({ url: "api.meteo.xyz/v1/dubai" })'],
+    ['tool', '→ <b>x402_pay</b>({ url: "api.meteo.xyz/v1/dubai" })'],
     ['ok', '✓ paid 0.02 USDC · settled in 1.9s · 200 OK'],
     ['agent', 'Dubai: 31°C, humidity 48%, wind NW 14 km/h. Paid 2 cents, no API key needed.'],
   ],

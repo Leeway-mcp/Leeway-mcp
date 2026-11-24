@@ -6,7 +6,7 @@
 
 An open-source [Model Context Protocol](https://modelcontextprotocol.io) server that gives Claude, Cursor and any AI agent safe, policy-guarded access to on-chain value.
 
-`market data` · `wallets` · `risk intelligence` · `guarded swaps` · `tx simulation` · `x402 payments` · `policy engine`
+`market data` · `risk intelligence` · `tx simulation` · `agent wallet` · `x402 payments` · `human approvals` · `policy engine`
 
 </div>
 
@@ -16,9 +16,11 @@ An open-source [Model Context Protocol](https://modelcontextprotocol.io) server 
 
 AI agents are turning into economic actors. They buy data and call paid APIs, and soon they will trade. Handing an LLM a private key is a bad idea, because one prompt injection can drain the wallet.
 
-Leeway puts a **policy engine** between the agent and the money. The agent gets typed tools to read markets, check risk and price payments. Every spend gets an `allow`, `needs_approval` or `deny` decision, enforced on the server side where no prompt can change it.
+Leeway puts a **policy engine** between the agent and the money. The model never sees a key: it gets typed tools to read markets, check risk, simulate transactions and, from v0.3, spend from a small hot wallet. Every spend is simulated first, then gets an `allow`, `needs_approval` or `deny` decision enforced on the server, where no prompt can change it. When a human must decide, the owner taps Approve in Telegram.
 
 ## Tools
+
+**Read-only (11)**
 
 | Tool | What it does |
 |---|---|
@@ -34,7 +36,18 @@ Leeway puts a **policy engine** between the agent and the money. The agent gets 
 | `x402_quote` | Reads the price of an HTTP 402 (x402) paywalled resource and runs the policy check |
 | `spending_report` | Today's spend, remaining budget, active limits |
 
-Chains: `ethereum`, `base`, `arbitrum`, `optimism`, `polygon`, `bsc`, `avalanche`.
+**Execution and approvals (6, new in v0.3)**
+
+| Tool | What it does |
+|---|---|
+| `wallet_info` | Agent wallet address, chains it may execute on, balances. Never returns key material |
+| `send_transaction` | Any transfer or contract call from the agent wallet: simulated, policy-checked, approval when needed, then signed |
+| `execute_swap` | Best-route swap from the agent wallet with the `swap_quote` checks plus a simulation (native-token sells for now) |
+| `x402_pay` | Pays an HTTP 402 resource in USDC (x402 v1 and v2, EIP-3009 signed authorization) and returns the content and receipt |
+| `approval_status` | Pending / approved / denied / expired for an approval request |
+| `list_approvals` | Recent approval requests |
+
+Chains: `ethereum`, `base`, `arbitrum`, `optimism`, `polygon`, `bsc`, `avalanche`, plus `base-sepolia` and `sepolia` testnets.
 Data sources: CoinGecko and DefiLlama (prices), PublicNode RPC, GoPlus Security, KyberSwap aggregator. All free, no API keys needed.
 
 The guard core (`server/src/onchain.js`) is isomorphic: the landing-page playground runs a generated copy of the same file (`npm run sync-site`), and `npm test` fails if the two drift apart.
@@ -44,7 +57,7 @@ The guard core (`server/src/onchain.js`) is isomorphic: the landing-page playgro
 ```bash
 git clone https://github.com/<you>/leeway-mcp && cd leeway-mcp/server
 npm install
-npm test          # spawns the server and calls every tool against live data
+npm test          # every read tool against live data, then the execution suite (throwaway key, local x402 merchant)
 ```
 
 Add it to **Claude Desktop** (`claude_desktop_config.json`):
@@ -81,6 +94,37 @@ After `npm publish`, this becomes `npx -y leeway-mcp`.
 | `LEEWAY_DENYLIST` | (empty) | Always denied |
 | `LEEWAY_REQUIRE_APPROVAL` | `true` | Require approval for every non-micro spend |
 | `LEEWAY_LEDGER` | `~/.leeway-mcp/ledger.json` | Where the daily spend ledger is stored |
+| `LEEWAY_EXECUTION_CHAINS` | `base-sepolia` | Chains where the agent may sign. Mainnet is opt-in |
+| `LEEWAY_EXECUTION` | `on` | `off` disables every signing tool |
+| `LEEWAY_AGENT_KEY` / `LEEWAY_AGENT_KEY_FILE` | `~/.leeway-mcp/agent-key.json` | Agent hot-wallet key, or where it is stored |
+| `LEEWAY_APPROVALS` / `LEEWAY_APPROVAL_TTL_MIN` | `~/.leeway-mcp/approvals.json` / `15` | Approval store and lifetime |
+| `LEEWAY_TELEGRAM_BOT_TOKEN` / `LEEWAY_TELEGRAM_CHAT_ID` | (empty) | Telegram approvals |
+| `LEEWAY_HTTP_TOKEN` / `LEEWAY_ADMIN_TOKEN` / `LEEWAY_HTTP_HOST` | (empty) / (empty) / `127.0.0.1` | HTTP mode: agent token, owner token, bind address |
+
+## Execution and approvals (v0.3)
+
+Every action that moves funds runs the same gate: **simulate on live state → policy → human approval if needed → sign → record in the ledger**.
+
+```bash
+npx leeway-mcp init-wallet      # creates the agent hot wallet (~/.leeway-mcp/agent-key.json, mode 600)
+npx leeway-mcp approvals        # list approval requests
+npx leeway-mcp approve 4E9496   # or: deny 4E9496
+```
+
+- **Testnet by default.** The agent can only sign on `base-sepolia` until you opt in: `LEEWAY_EXECUTION_CHAINS=base,base-sepolia`. `LEEWAY_EXECUTION=off` disables signing entirely.
+- **A hot wallet, not your wallet.** Fund it with what you are willing to let the agent spend. The key lives only in the server process; no tool returns it.
+- **Approvals are bound and single-use.** An approval is tied to a hash of the exact arguments, expires after 15 minutes and works once. The agent has no tool that can approve.
+- **Three ways to approve:** Telegram buttons (`LEEWAY_TELEGRAM_BOT_TOKEN` + `LEEWAY_TELEGRAM_CHAT_ID`; only that chat is accepted), the CLI above, or the admin HTTP endpoint.
+
+A typical flow: `x402_pay` for a $5 resource returns `pending_approval` with an `approval_id` → you tap Approve → the agent repeats the call with `approval_id` → `paid`, with the settlement receipt.
+
+### Remote agents (HTTP)
+
+```bash
+LEEWAY_HTTP_TOKEN=<agent token, 16+ chars> LEEWAY_ADMIN_TOKEN=<different owner token> npx leeway-mcp http --port 3333
+```
+
+Stateless Streamable HTTP at `POST /mcp` (Bearer agent token), `GET /health`, and owner-only `GET /approvals`, `POST /approvals/<id>/approve|deny` (Bearer admin token). Binds to 127.0.0.1 unless you pass `--host`. The server refuses to start without an agent token, or if both tokens are the same.
 
 ## Example
 
@@ -103,9 +147,12 @@ After `npm publish`, this becomes `npx -y leeway-mcp`.
 - [x] Guarded swap quotes (DEX aggregator + impact, risk and policy checks)
 - [x] Pre-sign transaction simulation (asset changes, approvals, reverts)
 - [ ] npm publish · official MCP Registry · Smithery (manifests ready: `server/server.json`, `mcpName`)
-- [ ] Policy-bound agent smart wallets (ERC-4337) with execution
-- [ ] x402 payment settlement
-- [ ] Human approval via Telegram
+- [x] Agent hot wallet with policy-gated execution (testnet by default)
+- [x] x402 payment settlement in USDC (v1 + v2)
+- [x] Human approvals via Telegram, CLI and admin HTTP
+- [x] Streamable HTTP transport for remote agents
+- [ ] ERC-4337 smart accounts with scoped session keys
+- [ ] ERC-20 sells with exact allowances · email approvals · audit #1
 - [ ] **Equity Rails**: tokenized stock quotes, Parity Guard (blocks buys above the real exchange price), equity guardrails (per-ticker and sector caps, market hours, no leverage)
 - [ ] Solana support
 - [ ] Hosted gateway

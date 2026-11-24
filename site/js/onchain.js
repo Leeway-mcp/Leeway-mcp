@@ -301,7 +301,7 @@ const short = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`;
  * impact, gas share, risk scan of the token being bought and the policy decision. With a
  * `sender` it also builds the exact router calldata and simulates it.
  */
-export async function swapQuote(ctx, { chain, sell, buy, amount, slippageBps = 50, sender, fundSender = false }) {
+export async function swapQuote(ctx, { chain, sell, buy, amount, slippageBps = 50, sender, fundSender = false, includeTx = false }) {
   const slug = KYBER_SLUG[chain];
   if (!slug) throw new Error(`swaps are not supported on "${chain}"`);
   const [tin, tout] = await Promise.all([resolveToken(ctx, chain, sell), resolveToken(ctx, chain, buy)]);
@@ -340,7 +340,7 @@ export async function swapQuote(ctx, { chain, sell, buy, amount, slippageBps = 5
   const policy = ctx.evaluate({ valueUsd: round(inUsd) ?? 0, merchant: 'kyberswap' });
   check('policy', policy.decision === 'allow' ? 'pass' : policy.decision === 'deny' ? 'fail' : 'warn', `${policy.decision}: ${policy.reasons.join('; ')}`);
 
-  let simulation;
+  let simulation, tx;
   if (sender) {
     const b = await ctx.getJSON(`${base}/route/build`, {
       method: 'POST', headers: { ...KYBER_HEADERS, 'Content-Type': 'application/json' },
@@ -348,6 +348,7 @@ export async function swapQuote(ctx, { chain, sell, buy, amount, slippageBps = 5
     }).catch((e) => ({ code: -1, message: e.message }));
     if (b?.code !== 0 || !b.data?.data) simulation = { verdict: 'NOT_RUN', note: `could not build calldata: ${b?.message ?? 'unknown error'}` };
     else {
+      tx = { to: b.data.routerAddress, data: b.data.data, value: String(b.data.transactionValue || 0) };
       simulation = await simulateTx(ctx, { chain, from: sender, to: b.data.routerAddress, data: b.data.data, valueWei: BigInt(b.data.transactionValue || 0), fundSender: fundSender && tin.address === NATIVE, merchant: 'kyberswap' });
       if (simulation.status === 'reverted' && tin.address !== NATIVE) simulation.hint = `selling an ERC-20 needs a balance and an allowance for the router ${b.data.routerAddress}`;
       check('simulation', simulation.status === 'success' ? 'pass' : 'fail', simulation.status === 'success' ? `succeeds on block ${simulation.block}, receives ${simulation.asset_changes.find((x) => x.direction === 'in')?.amount ?? '?'} ${tout.symbol}` : `reverts: ${simulation.revert_reason}`);
@@ -362,7 +363,7 @@ export async function swapQuote(ctx, { chain, sell, buy, amount, slippageBps = 5
     rate: `1 ${tin.symbol} = ${round(Number(outAmount) / Number(amount), 6)} ${tout.symbol}`,
     value_in_usd: round(inUsd), value_out_usd: round(outUsd), price_impact_pct: round(impact, 3), gas_usd: round(gasUsd, 4),
     route: { aggregator: 'KyberSwap', exchanges, paths: r.route.length, max_hops: Math.max(...r.route.map((p) => p.length)) },
-    checks, policy, ...(risk && { token_risk: risk }), ...(simulation && { simulation }),
+    checks, policy, ...(risk && { token_risk: risk }), ...(simulation && { simulation }), ...(includeTx && tx && { tx }),
     note: 'Quote only. Nothing was signed or sent.',
   };
 }

@@ -7,7 +7,12 @@ export const CHAINS = {
   polygon: { id: 137, rpc: 'https://polygon-bor-rpc.publicnode.com', symbol: 'POL', cg: 'polygon-ecosystem-token' },
   bsc: { id: 56, rpc: 'https://bsc-rpc.publicnode.com', symbol: 'BNB', cg: 'binancecoin' },
   avalanche: { id: 43114, rpc: 'https://avalanche-c-chain-rpc.publicnode.com', symbol: 'AVAX', cg: 'avalanche-2' },
+  // testnets: where agent execution is enabled by default (test ETH is still valued at the ETH price, so limits behave like mainnet)
+  'base-sepolia': { id: 84532, rpc: 'https://base-sepolia-rpc.publicnode.com', symbol: 'ETH', cg: 'ethereum', testnet: true, explorer: 'https://sepolia.basescan.org' },
+  sepolia: { id: 11155111, rpc: 'https://ethereum-sepolia-rpc.publicnode.com', symbol: 'ETH', cg: 'ethereum', testnet: true, explorer: 'https://sepolia.etherscan.io' },
 };
+const EXPLORERS = { ethereum: 'https://etherscan.io', base: 'https://basescan.org', arbitrum: 'https://arbiscan.io', optimism: 'https://optimistic.etherscan.io', polygon: 'https://polygonscan.com', bsc: 'https://bscscan.com', avalanche: 'https://snowtrace.io' };
+for (const [k, v] of Object.entries(EXPLORERS)) CHAINS[k].explorer = v;
 export const CHAIN_NAMES = Object.keys(CHAINS);
 
 const UA = { 'User-Agent': 'leeway-mcp/0.1', Accept: 'application/json' };

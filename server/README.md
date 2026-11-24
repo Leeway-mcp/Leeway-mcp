@@ -16,9 +16,15 @@ MCP server that gives Claude, Cursor and any AI agent safe, policy-guarded acces
 }
 ```
 
-**11 tools:** `get_price`, `trending_tokens`, `get_gas`, `get_balance`, `scan_token`, `check_address`, `swap_quote` (best DEX route with impact, risk and policy checks), `simulate_tx` (dry-run any transaction before signing: assets out/in, approvals, reverts), `policy_check`, `x402_quote`, `spending_report`.
+**17 tools.** Read-only: `get_price`, `trending_tokens`, `get_gas`, `get_balance`, `scan_token`, `check_address`, `swap_quote`, `simulate_tx`, `policy_check`, `x402_quote`, `spending_report`. Execution (v0.3): `wallet_info`, `send_transaction`, `execute_swap`, `x402_pay`, `approval_status`, `list_approvals`.
 
-Every tool is read-only: nothing is ever signed or broadcast. Every money-related answer carries a policy decision (`allow` / `needs_approval` / `deny`) enforced in code, not in the prompt.
+Every spend is simulated, checked by a policy engine enforced in code (`allow` / `needs_approval` / `deny`), and parked for your approval in Telegram when needed. The agent signs only on chains you enable (default: Base Sepolia testnet).
+
+```bash
+npx leeway-mcp init-wallet     # agent hot wallet
+npx leeway-mcp approve <id>    # approve a parked spend
+npx leeway-mcp http            # remote agents over Streamable HTTP
+```
 
 Full docs, configuration and roadmap: see the main repository.
 

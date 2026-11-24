@@ -1,8 +1,8 @@
 {
   "name": "leeway-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "mcpName": "io.github.YOUR_GITHUB/leeway-mcp",
-  "description": "Open-source MCP server that gives AI agents safe, policy-guarded access to on-chain value: prices, wallets, risk scans, guarded swap quotes, transaction simulation, gas and x402 payment quotes.",
+  "description": "Open-source MCP server that gives AI agents a policy-guarded wallet: risk scans, guarded swaps, pre-sign simulation, x402 payments and human approvals via Telegram.",
   "type": "module",
   "main": "src/index.js",
   "bin": {
@@ -15,9 +15,10 @@
   ],
   "scripts": {
     "start": "node src/index.js",
-    "test": "node scripts/sync-site.mjs --check && node test/smoke.js",
+    "test": "node scripts/sync-site.mjs --check && node test/smoke.js && node test/execution.js",
     "sync-site": "node scripts/sync-site.mjs",
-    "inspect": "npx @modelcontextprotocol/inspector node src/index.js"
+    "inspect": "npx @modelcontextprotocol/inspector node src/index.js",
+    "test:exec": "node test/execution.js"
   },
   "keywords": [
     "mcp",
@@ -32,7 +33,11 @@
     "swap",
     "simulation",
     "transaction-simulation",
-    "wallet-security"
+    "wallet-security",
+    "agent-wallet",
+    "x402-client",
+    "human-in-the-loop",
+    "telegram"
   ],
   "repository": {
     "type": "git",
@@ -46,6 +51,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "viem": "2.57.17",
     "zod": "^4.6.7"
   }
 }

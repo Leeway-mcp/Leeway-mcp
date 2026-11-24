@@ -2,19 +2,76 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.YOUR_GITHUB/leeway-mcp",
   "description": "Policy-guarded on-chain tools for AI agents: risk scans, guarded swaps, tx simulation, x402.",
-  "repository": { "url": "https://github.com/YOUR_GITHUB/leeway-mcp", "source": "github" },
-  "version": "0.2.0",
+  "repository": {
+    "url": "https://github.com/YOUR_GITHUB/leeway-mcp",
+    "source": "github"
+  },
+  "version": "0.3.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "leeway-mcp",
-      "version": "0.2.0",
-      "transport": { "type": "stdio" },
+      "version": "0.3.0",
+      "transport": {
+        "type": "stdio"
+      },
       "environmentVariables": [
-        { "name": "LEEWAY_DAILY_LIMIT_USD", "description": "Daily spend limit in USD (default 50)", "isRequired": false, "format": "number", "isSecret": false },
-        { "name": "LEEWAY_PER_TX_LIMIT_USD", "description": "Per-transaction limit in USD (default 25)", "isRequired": false, "format": "number", "isSecret": false },
-        { "name": "LEEWAY_HARD_CAP_USD", "description": "Hard cap: anything above is denied (default 500)", "isRequired": false, "format": "number", "isSecret": false },
-        { "name": "LEEWAY_ALLOWLIST", "description": "Comma-separated merchants/protocols allowed above the micro allowance", "isRequired": false, "format": "string", "isSecret": false }
+        {
+          "name": "LEEWAY_DAILY_LIMIT_USD",
+          "description": "Daily spend limit in USD (default 50)",
+          "isRequired": false,
+          "format": "number",
+          "isSecret": false
+        },
+        {
+          "name": "LEEWAY_PER_TX_LIMIT_USD",
+          "description": "Per-transaction limit in USD (default 25)",
+          "isRequired": false,
+          "format": "number",
+          "isSecret": false
+        },
+        {
+          "name": "LEEWAY_HARD_CAP_USD",
+          "description": "Hard cap: anything above is denied (default 500)",
+          "isRequired": false,
+          "format": "number",
+          "isSecret": false
+        },
+        {
+          "name": "LEEWAY_ALLOWLIST",
+          "description": "Comma-separated merchants/protocols allowed above the micro allowance",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "LEEWAY_EXECUTION_CHAINS",
+          "description": "Chains where the agent may sign (default base-sepolia)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "LEEWAY_AGENT_KEY",
+          "description": "Agent hot-wallet private key (or run init-wallet)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "LEEWAY_TELEGRAM_BOT_TOKEN",
+          "description": "Bot token for Telegram approvals",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "LEEWAY_TELEGRAM_CHAT_ID",
+          "description": "Your Telegram chat id (only this chat can approve)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
       ]
     }
   ]
