@@ -282,6 +282,44 @@ if (!reduced && matchMedia('(hover: hover)').matches) {
   });
 })();
 
+/* ---------- Leeway Guard mock: click "Approve & swap" → overlay blocks a drainer → toast ---------- */
+(() => {
+  const mock = $('#gdMock');
+  if (!mock) return;
+  const cursor = $('.gd-cursor', mock), confirmBtn = $('#gdConfirm'), rejectBtn = $('#gdReject');
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  if (reduced) { mock.classList.add('is-guard'); return; } // static, informative final frame
+  const point = (el, dx = 0.55, dy = 0.6) => {
+    const m = mock.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return [r.left - m.left + r.width * dx, r.top - m.top + r.height * dy];
+  };
+  const moveTo = ([x, y]) => { cursor.style.setProperty('--cx', `${x}px`); cursor.style.setProperty('--cy', `${y}px`); };
+  const press = async (cls) => { mock.classList.add(cls); cursor.style.scale = '0.85'; await sleep(180); mock.classList.remove(cls); cursor.style.scale = ''; };
+  let visible = false, running = false;
+  new IntersectionObserver((e) => { visible = e[0].isIntersecting; if (visible && !running) loop(); }, { threshold: 0.35 }).observe(mock);
+  async function loop() {
+    running = true;
+    while (visible) {
+      mock.classList.add('is-reset');
+      mock.classList.remove('is-guard', 'is-safe');
+      const m = mock.getBoundingClientRect();
+      moveTo([m.width * 0.82, m.height * 0.94]);
+      await sleep(60); mock.classList.remove('is-reset');
+      await sleep(900);
+      moveTo(point(confirmBtn)); await sleep(1250);
+      await press('is-press-confirm');
+      await sleep(250);
+      mock.classList.add('is-guard'); await sleep(3200);
+      moveTo(point(rejectBtn)); await sleep(1200);
+      await press('is-press-reject');
+      mock.classList.remove('is-guard'); mock.classList.add('is-safe');
+      await sleep(2800);
+      mock.classList.remove('is-safe'); await sleep(900);
+    }
+    running = false;
+  }
+})();
+
 /* ---------- agent terminal demo ---------- */
 const DEMOS = [
   [

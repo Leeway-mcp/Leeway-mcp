@@ -12,6 +12,11 @@ An open-source [Model Context Protocol](https://modelcontextprotocol.io) server 
 
 ---
 
+## Two ways in
+
+- **Leeway MCP** (for AI agents): an MCP server with guardrails, a policy-gated wallet and human approvals. `npx -y leeway-mcp`
+- **Leeway Guard** (for humans): a browser extension that simulates every wallet transaction and signature before your wallet opens. See what you sign. [extension/](extension/)
+
 ## Why
 
 AI agents are turning into economic actors. They buy data and call paid APIs, and soon they will trade. Handing an LLM a private key is a bad idea, because one prompt injection can drain the wallet.
@@ -126,6 +131,12 @@ LEEWAY_HTTP_TOKEN=<agent token, 16+ chars> LEEWAY_ADMIN_TOKEN=<different owner t
 
 Stateless Streamable HTTP at `POST /mcp` (Bearer agent token), `GET /health`, and owner-only `GET /approvals`, `POST /approvals/<id>/approve|deny` (Bearer admin token). Binds to 127.0.0.1 unless you pass `--host`. The server refuses to start without an agent token, or if both tokens are the same.
 
+## Leeway Guard (browser extension)
+
+The same simulation engine, in front of your own wallet. When a dApp asks MetaMask, Rabby or any EIP-1193 wallet to send a transaction or sign a Permit / Permit2 message, Leeway Guard shows what will actually happen first: assets in and out, approvals (flags unlimited and wallet-to-wallet), flagged spenders, reverts. Right-click any 0x address for a token risk score. Free, open source, no account, no telemetry.
+
+Install from source today: Chrome / Edge / Brave → `chrome://extensions` → Developer mode → Load unpacked → `extension/`. Firefox → `about:debugging` → This Firefox → Load Temporary Add-on → `extension/manifest.json`. Store listings: Firefox Add-ons and Edge Add-ons first, Chrome Web Store later (listing kit in [store/listing.md](store/listing.md)).
+
 ## Example
 
 > **You:** Is this token safe? `0x…` on Base
@@ -164,9 +175,11 @@ Stateless Streamable HTTP at `POST /mcp` (Bearer agent token), `GET /health`, an
 ## Repository
 
 ```
-server/   MCP server (Node ≥ 18, ESM, zero build step)
-site/     Landing page (static HTML/CSS/JS + Three.js, deploy anywhere)
-PROMPT.md Design brief used to build the landing
+server/     MCP server (Node ≥ 18, ESM, zero build step)
+extension/  Leeway Guard browser extension (Manifest V3, Firefox · Edge · Chrome)
+store/      Store listing kit for the extension
+site/       Landing page (static HTML/CSS/JS + Three.js, deploy anywhere)
+PROMPT.md   Design brief used to build the landing
 ```
 
 Run the landing locally: `npx serve site`. Deploy with GitHub Pages by pointing it at `/site`.

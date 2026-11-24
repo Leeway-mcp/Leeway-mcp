@@ -37,6 +37,7 @@
         <a href="#top" class="is-active">Home</a>
         <a href="#protocol">Protocol</a>
         <a href="#playground">Playground</a>
+        <a href="#guard">Extension</a>
         <a href="#token">Token</a>
         <a href="#roadmap">Roadmap</a>
         <a href="docs.html">Docs</a>
@@ -50,7 +51,7 @@
       </div>
     </div>
     <div class="mobile-menu" id="mobileMenu">
-      <a href="#top">Home</a><a href="#protocol">Protocol</a><a href="#playground">Playground</a><a href="#token">Token</a><a href="#roadmap">Roadmap</a><a href="#news">Insights</a><a href="docs.html">Docs</a>
+      <a href="#top">Home</a><a href="#protocol">Protocol</a><a href="#playground">Playground</a><a href="#guard">Extension</a><a href="#token">Token</a><a href="#roadmap">Roadmap</a><a href="#news">Insights</a><a href="docs.html">Docs</a>
       <a href="#install" class="btn btn--gold">Get started ✦</a>
     </div>
   </header>
@@ -63,6 +64,7 @@
         <div class="hero__grid" aria-hidden="true"></div>
         <div class="container hero__inner">
           <div class="hero__copy">
+            <a href="#guard" class="hero__new reveal"><em>New</em><span>Leeway Guard browser extension</span><i>→</i></a>
             <p class="hero__eyebrow reveal">Give your agents leeway, not a private key.</p>
             <h1 class="hero__title reveal" data-split>The Future of the Agent Economy Starts Here</h1>
             <p class="hero__lead reveal">An open-source MCP server that lets Claude, Cursor and any AI agent read markets, scan risk, simulate and pay, with every spend checked by a policy engine you control.</p>
@@ -270,6 +272,105 @@
             <div class="sim__gauge"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="g-bg"/><circle cx="60" cy="60" r="52" class="g-fg" id="simArc"/></svg><div><b id="simDecision">ALLOW</b><span id="simBudget">$50 left today</span></div></div>
             <ul class="sim__reasons" id="simReasons"></ul>
             <p class="sim__note">Same rules as <code>server/src/policy.js</code>, evaluated server-side. The model can only ask; it can't change the limits.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LEEWAY GUARD (browser extension) ============ -->
+    <section class="section section--guard" id="guard">
+      <div class="container">
+        <header class="sec-head reveal">
+          <p class="label">[ Leeway Guard · Browser extension ]</p>
+          <h2 class="title">See What You Sign. <span class="fade">Before Your Wallet Does.</span></h2>
+          <p class="sec-sub">The same engine that guards AI agents, now in your browser. Leeway Guard reads every transaction and signature request on any dApp, simulates it on live chain state and tells you what will actually happen, before MetaMask or Rabby even opens.</p>
+        </header>
+
+        <div class="gd reveal">
+          <div class="gd__copy">
+            <ul class="gd-feats">
+              <li>
+                <i><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/><path d="M9 12h6M12 9v6"/></svg></i>
+                <div><b>Transaction firewall</b><p>Every <code>eth_sendTransaction</code> is dry-run first: assets out and in, approvals, reverts, gas. Then you choose: reject, or continue to your wallet.</p></div>
+              </li>
+              <li>
+                <i><svg viewBox="0 0 24 24"><path d="M4 19c3-1 4-6 7-6s2 4 5 4 3-3 4-4"/><path d="M4 22h16"/></svg></i>
+                <div><b>Signature firewall</b><p>Decodes Permit and Permit2 signatures, the one-click drainer favourite. Flags unlimited amounts, plain-wallet spenders and long deadlines.</p></div>
+              </li>
+              <li>
+                <i><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5M8.5 11h5"/></svg></i>
+                <div><b>Scan any address</b><p>Right-click a <code>0x…</code> on X, Telegram Web or any DEX: <em>Scan with Leeway</em> returns a 0–100 token risk or the address reputation.</p></div>
+              </li>
+              <li>
+                <i><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></i>
+                <div><b>Local and private</b><p>No account, no telemetry, never touches your keys. It reads the request before it reaches the wallet, and that's all.</p></div>
+              </li>
+            </ul>
+
+            <div class="gd-install">
+              <a href="https://github.com/" target="_blank" rel="noopener" class="btn btn--gold">Install from source <i>↗</i></a>
+              <a href="docs.html#guard" class="btn btn--ghost">How it works <i class="spark">✦</i></a>
+            </div>
+            <div class="gd-stores" aria-label="Browser stores">
+              <span class="gd-store"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M7 7.5c1.5-1 3.5-1.2 5-.4 2.6 1.3 3.5 4.6 1.8 7-1.3 1.9-3.9 2.5-5.8 1.4"/></svg><b>Firefox</b><em class="st st--soon">soon</em></span>
+              <span class="gd-store"><svg viewBox="0 0 24 24"><path d="M20 13.5A8.5 8.5 0 1 1 11 3.5c4.2 0 7.5 2.6 7.5 5.8 0 2-1.6 3.2-3.5 3.2-2.2 0-3.4-1.4-3.4-3"/><path d="M5 15c2 3 7 4.5 11 2"/></svg><b>Edge</b><em class="st st--soon">soon</em></span>
+              <span class="gd-store"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6h8M9.1 13.7 5 6.6M14.9 13.7 11 20.9"/></svg><b>Chrome</b><em class="st">later</em></span>
+            </div>
+            <p class="gd-note">Free · open source · no account · no telemetry · v0.1.0</p>
+          </div>
+
+          <!-- animated product mock -->
+          <div class="gd-mock corners" id="gdMock" aria-label="Leeway Guard blocking a drainer approval on a swap site">
+            <div class="gd-win__bar">
+              <span class="gd-dots"><i></i><i></i><i></i></span>
+              <span class="gd-url"><svg viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="9" rx="2"/><path d="M9 11V8.5a3 3 0 0 1 6 0V11"/></svg>app.swapzone-finance.io</span>
+              <span class="gd-ext" title="Leeway Guard"><svg viewBox="0 0 40 40"><g fill="currentColor" transform="translate(0 -1.2)"><g transform="rotate(8 20 20)"><path d="M10 4V30.5H25Z"/><path d="M14.6 8.4 28.4 30.5H33Z"/></g><path d="M5 34.2h30l-2.6 3H7.6Z"/></g></svg></span>
+            </div>
+            <div class="gd-win__body">
+              <div class="gd-dapp">
+                <div class="gd-dapp__nav"><b>SwapZone</b><span>Swap</span><span>Pools</span><span class="gd-chip">0x7d3a…6a7b</span></div>
+                <div class="gd-swap">
+                  <div class="gd-swap__row"><small>You pay</small><div><b>1,000</b><span class="gd-tok gd-tok--usdc">USDC</span></div></div>
+                  <div class="gd-swap__arrow">↓</div>
+                  <div class="gd-swap__row"><small>You receive</small><div><b>0.5843</b><span class="gd-tok gd-tok--eth">ETH</span></div></div>
+                  <button class="gd-confirm" id="gdConfirm" type="button" tabindex="-1">Approve &amp; swap</button>
+                  <p class="gd-swap__meta">Best price · 0.1% fee</p>
+                </div>
+              </div>
+
+              <div class="gd-guard" role="dialog" aria-label="Leeway Guard verdict">
+                <div class="gd-guard__head"><span class="gd-guard__brand"><svg viewBox="0 0 40 40"><g fill="currentColor" transform="translate(0 -1.2)"><g transform="rotate(8 20 20)"><path d="M10 4V30.5H25Z"/><path d="M14.6 8.4 28.4 30.5H33Z"/></g><path d="M5 34.2h30l-2.6 3H7.6Z"/></g></svg>Leeway Guard</span><em>simulated · block 60,791,143</em></div>
+                <div class="gd-verdict"><b>DO NOT SIGN</b><span>approve(address,uint256) · Base</span></div>
+                <div class="gd-row gd-row--appr"><b>unlimited USDC</b><span>approval → <code>0x2222…2222</code> <em>plain wallet</em></span></div>
+                <div class="gd-row gd-row--note"><span>Nothing moves now. The spender can take your USDC later, at any time.</span></div>
+                <ul class="gd-warn"><li>Classic drainer pattern: approval to a wallet, not a contract</li><li>Unlimited amount, no expiry</li></ul>
+                <div class="gd-guard__actions"><button class="gd-reject" id="gdReject" type="button" tabindex="-1">Reject</button><button class="gd-continue" type="button" tabindex="-1">Continue to wallet</button></div>
+              </div>
+
+              <div class="gd-toast"><i>✓</i><div><b>Blocked · funds safe</b><span>Leeway stopped 1 drainer approval on this site</span></div></div>
+            </div>
+            <svg class="gd-cursor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2.5 19.5 12l-7 1.6-3.4 6.9L4 2.5Z" fill="#fff" stroke="#0a0a10" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+
+        <!-- two products, one engine -->
+        <div class="ways reveal">
+          <p class="ways__label">Two ways in · one engine</p>
+          <div class="ways__grid">
+            <a href="#install" class="way">
+              <small>For AI agents</small>
+              <b>Leeway MCP</b>
+              <span>Limits, simulation and approvals for Claude, Cursor and any agent.</span>
+              <code>npx -y leeway-mcp</code>
+              <i>→</i>
+            </a>
+            <a href="#guard" class="way way--guard">
+              <small>For humans</small>
+              <b>Leeway Guard</b>
+              <span>The same checks in your browser, before every signature.</span>
+              <code>Install extension</code>
+              <i>→</i>
+            </a>
           </div>
         </div>
       </div>
@@ -637,9 +738,9 @@
             <small class="subscribe__ok" hidden>You're on the list ✦</small>
           </form>
         </div>
-        <div class="fbox"><h4>Quick links</h4><a href="#top">Home</a><a href="#protocol">Protocol</a><a href="#playground">Playground</a><a href="#tools">Tools</a><a href="#token">Token</a><a href="#roadmap">Roadmap</a></div>
-        <div class="fbox"><h4>Developers</h4><a href="docs.html">Documentation</a><a href="https://github.com/" target="_blank" rel="noopener">GitHub</a><a href="docs.html#quickstart">Quickstart</a><a href="docs.html#tools">Tool reference</a><a href="#terminal">Live demo</a></div>
-        <div class="fbox"><h4>Support</h4><a href="#news">Contact us</a><a href="#news">FAQ</a><a href="#news">Privacy policy</a><a href="#news">Terms</a></div>
+        <div class="fbox"><h4>Quick links</h4><a href="#top">Home</a><a href="#protocol">Protocol</a><a href="#playground">Playground</a><a href="#guard">Extension</a><a href="#tools">Tools</a><a href="#token">Token</a><a href="#roadmap">Roadmap</a></div>
+        <div class="fbox"><h4>Developers</h4><a href="docs.html">Documentation</a><a href="https://github.com/" target="_blank" rel="noopener">GitHub</a><a href="docs.html#quickstart">Quickstart</a><a href="docs.html#tools">Tool reference</a><a href="docs.html#guard">Extension docs</a><a href="#terminal">Live demo</a></div>
+        <div class="fbox"><h4>Support</h4><a href="#news">Contact us</a><a href="#news">FAQ</a><a href="privacy.html">Privacy policy</a><a href="#news">Terms</a></div>
       </div>
       <div class="footer__bottom">
         <div class="fbox fbox--row"><span>leeway-mcp.xyz ©2026. All rights reserved. Not financial advice.</span></div>

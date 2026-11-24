@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy | Leeway</title>
+  <meta name="description" content="Privacy policy for the Leeway Guard browser extension and the Leeway MCP server: no accounts, no telemetry, what is sent to which public API and why." />
+  <meta name="theme-color" content="#06060a" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="legal-body">
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="nav is-scrolled">
+    <div class="container nav__inner">
+      <a href="index.html" class="logo" aria-label="Leeway home">
+        <svg class="logo__mark" viewBox="0 0 40 40" aria-hidden="true">
+          <defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e7b94f"/><stop offset="1" stop-color="#7a4e12"/></linearGradient></defs>
+          <g fill="url(#lg1)" transform="translate(0 -1.2)"><g transform="rotate(8 20 20)"><path d="M10 4V30.5H25Z"/><path d="M14.6 8.4 28.4 30.5H33Z"/></g><path d="M5 34.2h30l-2.6 3H7.6Z"/></g></svg>
+        <span>LEEWAY</span>
+      </a>
+      <div class="nav__cta">
+        <a href="index.html" class="legal-back">← Back to site</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="legal container">
+    <p class="label">[ Privacy ]</p>
+    <h1>Privacy</h1>
+    <p class="legal-meta">Applies to the Leeway Guard browser extension and the Leeway MCP server · Last updated 24 November 2026</p>
+
+    <div class="legal-sum corners">
+      <b>In short</b>
+      <ul>
+        <li>We collect nothing. No accounts, no analytics, no telemetry, no servers of our own.</li>
+        <li>Both products run on your device. To do their job they query a few public APIs directly from your device, listed below.</li>
+        <li>Neither product can read, store or use your private keys, seed phrase or wallet password.</li>
+      </ul>
+    </div>
+
+    <h2>1. Leeway Guard (browser extension)</h2>
+    <h3>What it does</h3>
+    <p>Leeway Guard reads transaction and signature requests that a website sends to your wallet (for example <code>eth_sendTransaction</code> or a Permit signature), simulates them and shows you what would happen before your wallet opens. It also lets you right-click an address on a page to check it.</p>
+
+    <h3>What we collect</h3>
+    <p>Nothing. The extension has no account, no sign-in, no analytics or crash reporting, and no backend operated by us. We never receive your browsing history, your wallet address or your transactions.</p>
+
+    <h3>What leaves your browser, and why</h3>
+    <p>To analyse a request, the extension sends the minimum data needed directly from your browser to these public services. Each provider handles requests under its own privacy policy.</p>
+    <div class="legal-table">
+      <table>
+        <thead><tr><th>Service</th><th>What is sent</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>PublicNode RPC<br><small>*.publicnode.com</small></td><td>The transaction you are about to sign (from, to, value, calldata) and the chain</td><td>Simulate it on current chain state to show asset changes, approvals and reverts</td></tr>
+          <tr><td>GoPlus Security<br><small>api.gopluslabs.io</small></td><td>Token and counterparty addresses involved in the request, or the address you chose to scan</td><td>Risk score and phishing / drainer / sanctions reputation</td></tr>
+          <tr><td>DefiLlama · CoinGecko<br><small>coins.llama.fi · api.coingecko.com</small></td><td>Token contract addresses and the chain</td><td>USD prices for the amounts shown</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Because requests go directly from your browser, these services can see your IP address, as with any website you visit. Nothing is sent when you are just browsing: only when a site asks your wallet to sign something, or when you use <em>Scan with Leeway</em>.</p>
+
+    <h3>What is stored on your device</h3>
+    <p>Your settings (on/off, paused sites, enabled chains) and local counters of checks, warnings and blocks, kept in the browser's extension storage. You can clear them from the extension popup or by removing the extension.</p>
+
+    <h3>Permissions and why they are needed</h3>
+    <div class="legal-table">
+      <table>
+        <thead><tr><th>Permission</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>storage</code></td><td>Save your settings and local counters</td></tr>
+          <tr><td><code>contextMenus</code></td><td>The <em>Scan with Leeway</em> right-click item</td></tr>
+          <tr><td><code>activeTab</code></td><td>Lets the popup read the current tab&#39;s site when you click it, for <em>Pause on this site</em>. No access to other tabs or history.</td></tr>
+          <tr><td>Content scripts on all sites</td><td>Any website can ask your wallet to sign, so the extension must be present on every page to inspect those requests before they reach the wallet. It does not read page content otherwise.</td></tr>
+          <tr><td>Host access to the API domains above</td><td>Run the simulation, risk and price lookups</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>2. Leeway MCP server</h2>
+    <p>The MCP server runs on your own machine (or a server you control) next to your AI agent. We operate no backend for it.</p>
+    <ul class="legal-list">
+      <li><b>Same public APIs.</b> It queries the services listed above, plus the KyberSwap aggregator for swap quotes, directly from where it runs.</li>
+      <li><b>Local files.</b> The spending ledger, approval requests and, if you create one, the agent hot-wallet key are stored only on that machine (by default in <code>~/.leeway-mcp/</code>). No tool returns the key, and it is never sent anywhere; only signed transactions and x402 payment authorizations leave the machine, and only after policy and, where required, your approval.</li>
+      <li><b>Telegram (optional).</b> If you configure a bot token and chat id, approval requests (a short summary, the amount and the reason) are sent to your Telegram chat through the Telegram Bot API. Nothing is sent to Telegram otherwise.</li>
+      <li><b>x402 merchants.</b> When your agent pays for a resource, the merchant receives the signed payment authorization, as the protocol requires.</li>
+    </ul>
+
+    <h2>3. Open source</h2>
+    <p>Both products are open source under the MIT license, so every statement on this page can be checked in the code.</p>
+
+    <h2>4. Changes and contact</h2>
+    <p>If this policy changes, we will update this page and the date above. Questions: <a href="mailto:privacy@leeway-mcp.xyz">privacy@leeway-mcp.xyz</a> (placeholder until launch) or an issue on GitHub.</p>
+  </main>
+
+  <footer class="legal-foot container"><span>leeway-mcp.xyz ©2026 · Not financial advice.</span><a href="index.html">Home</a><a href="docs.html">Docs</a><a href="docs.html#guard">Leeway Guard</a></footer>
+  <script type="module" src="js/cursor.js"></script>
+</body>
+</html>

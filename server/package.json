@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "start": "node src/index.js",
-    "test": "node scripts/sync-site.mjs --check && node test/smoke.js && node test/execution.js",
+    "test": "node scripts/sync-site.mjs --check && node ../extension/scripts/sync-core.mjs --check && node test/smoke.js && node test/execution.js",
     "sync-site": "node scripts/sync-site.mjs",
     "inspect": "npx @modelcontextprotocol/inspector node src/index.js",
     "test:exec": "node test/execution.js"

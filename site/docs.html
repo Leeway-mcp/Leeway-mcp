@@ -78,6 +78,7 @@
         <a href="#execution">Execution &amp; approvals</a>
         <a href="#x402">x402 payments</a>
         <a href="#http">Remote agents (HTTP)</a>
+        <a href="#guard">Leeway Guard (extension)</a>
         <a href="#security">Security model</a>
         <a href="#equities">Equity Rails (stocks)</a>
         <a href="#token">LWAY token (concept)</a>
@@ -98,7 +99,7 @@
         <div class="doc-cards">
           <a href="#quickstart" class="doc-card"><b>Quick start →</b><span>Install and connect your agent in under a minute.</span></a>
           <a href="#tools" class="doc-card"><b>Tool reference →</b><span>All 17 tools: 11 read-only, 6 for execution and approvals.</span></a>
-          <a href="#policy" class="doc-card"><b>Policy engine →</b><span>How allow / approve / deny decisions are made.</span></a>
+          <a href="#guard" class="doc-card"><b>Leeway Guard →</b><span>The browser extension: see what you sign before your wallet does.</span></a>
         </div>
         <figure class="shot">
           <img src="docs/img/landing-hero.jpg" alt="Leeway landing page hero with an interactive 3D globe showing agent gateway nodes" loading="lazy" width="1440" height="900" />
@@ -108,9 +109,10 @@
         <div class="kv">
           <div><em>What</em><span>MCP server (Node.js, ESM, zero build step)</span></div>
           <div><em>For</em><span>AI agents that need market data, wallet reads, risk checks and spend control</span></div>
-          <div><em>Tools</em><span>9 live today: market, wallets, risk, payments, policy</span></div>
-          <div><em>Chains</em><span>Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche</span></div>
-          <div><em>Data</em><span>CoinGecko · PublicNode RPC · GoPlus Security. Free, no API keys</span></div>
+          <div><em>Tools</em><span>17: 11 read-only, 6 for execution and approvals</span></div>
+          <div><em>Extension</em><span>Leeway Guard: the same checks in your browser, before every signature</span></div>
+          <div><em>Chains</em><span>Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, plus Base Sepolia and Sepolia</span></div>
+          <div><em>Data</em><span>PublicNode RPC · GoPlus Security · DefiLlama · CoinGecko · KyberSwap. Free, no API keys</span></div>
           <div><em>License</em><span>MIT</span></div>
         </div>
       </section>
@@ -674,6 +676,74 @@ npx leeway-mcp http --port 3333
 }</code></pre></div>
       </section>
 
+      <section id="guard" class="doc-sec">
+        <p class="label">[ Browser extension · v0.1.0 ]</p>
+        <h2>Leeway Guard <span class="fade">(browser extension)</span></h2>
+        <p class="lead">See what you sign. Leeway Guard brings the checks the MCP server runs for AI agents to people signing in a browser. When any website asks your wallet to sign, Guard reads the request first, simulates it on live chain state and shows a verdict before MetaMask, Rabby or Coinbase Wallet opens.</p>
+
+        <h3>What it does</h3>
+        <ul>
+          <li><b>Transaction firewall.</b> Intercepts <code>eth_sendTransaction</code> on any dApp and runs the same simulation core as <a href="#t-simulate_tx"><code>simulate_tx</code></a>: assets leaving and arriving with USD values, approvals granted, revert reason, gas. You then <em>Reject</em> or <em>Continue to wallet</em>.</li>
+          <li><b>Signature firewall.</b> Decodes Permit (EIP-2612) and Permit2 signature requests, the most common one-click drain. Flags unlimited amounts, spenders that are plain wallets or flagged addresses, and long deadlines.</li>
+          <li><b>Scan with Leeway.</b> Select or right-click any <code>0x…</code> address on a page (X, Telegram Web, a DEX) to get a 0–100 token risk score, or the reputation of a wallet.</li>
+          <li><b>Popup.</b> On / off, pause on the current site, counters of checked / warned / blocked requests and the latest checks.</li>
+        </ul>
+        <p>Works with MetaMask, Rabby, Coinbase Wallet and any wallet that exposes an EIP-1193 provider or announces itself through EIP-6963. Chains: Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, plus Base Sepolia and Sepolia.</p>
+
+        <h3>How the overlay decides</h3>
+        <p>Guard uses the verdicts documented for <a href="#t-simulate_tx"><code>simulate_tx</code></a>, so a human and an agent see the same answer for the same transaction:</p>
+        <table class="params"><thead><tr><th>Verdict</th><th>What you see</th></tr></thead>
+          <tbody><tr><td><code>SAFE TO SIGN</code></td><td>Succeeds, no warnings. A compact confirmation; the wallet opens as usual.</td></tr>
+          <tr><td><code>REVIEW</code></td><td>Medium warnings, for example an unlimited approval to a known contract or an asset that could not be priced.</td></tr>
+          <tr><td><code>DO NOT SIGN</code></td><td>High warnings: approval or Permit to a plain wallet, <code>setApprovalForAll</code>, a flagged counterparty.</td></tr>
+          <tr><td><code>WILL REVERT</code></td><td>The transaction would fail on-chain and only burn gas. The reason is shown.</td></tr></tbody></table>
+        <p>You always decide. <em>Continue to wallet</em> passes the original, unmodified request to your wallet; <em>Reject</em> returns the standard "user rejected" error (EIP-1193 code 4001) to the website.</p>
+
+        <h3>Install from source</h3>
+        <p>Store listings are on the way (below). Until then the extension installs from the open-source repository in under a minute:</p>
+        <div class="tabs" data-tabs>
+          <div class="tabs__head" role="tablist">
+            <button role="tab" class="is-on" data-tab="chromium">Chrome · Edge · Brave</button>
+            <button role="tab" data-tab="firefox">Firefox</button>
+          </div>
+          <div class="tabs__panel is-on" data-panel="chromium">
+            <ol class="steps">
+              <li>Download the repository from GitHub (Code → Download ZIP) and unzip it, or <code>git clone</code> it.</li>
+              <li>Open <code>chrome://extensions</code> (<code>edge://extensions</code>, <code>brave://extensions</code>) and switch on <b>Developer mode</b>.</li>
+              <li>Click <b>Load unpacked</b> and select the <code>extension/</code> folder.</li>
+              <li>Pin Leeway Guard to the toolbar. Open any dApp: the next signature request goes through Guard first.</li>
+            </ol>
+          </div>
+          <div class="tabs__panel" data-panel="firefox">
+            <ol class="steps">
+              <li>Download or clone the repository.</li>
+              <li>Open <code>about:debugging#/runtime/this-firefox</code>.</li>
+              <li>Click <b>Load Temporary Add-on…</b> and pick <code>extension/manifest.json</code>.</li>
+              <li>Temporary add-ons are removed when Firefox restarts. The signed Firefox Add-ons version will install permanently.</li>
+            </ol>
+          </div>
+        </div>
+
+        <h3>Store status</h3>
+        <table class="params"><thead><tr><th>Store</th><th>Status</th></tr></thead>
+          <tbody><tr><td>Firefox Add-ons</td><td>Submitting first. Review usually takes from a day to about a week.</td></tr>
+          <tr><td>Microsoft Edge Add-ons</td><td>Submitting next. Review usually takes up to a week or more.</td></tr>
+          <tr><td>Chrome Web Store</td><td>Later, after the free stores. Works today via Load unpacked.</td></tr></tbody></table>
+        <p>One codebase (Manifest V3) for all three. Only install Leeway Guard from the links on this site: crypto extensions are a common target for look-alike clones.</p>
+
+        <h3>Permissions</h3>
+        <table class="params"><thead><tr><th>Permission</th><th>Why it is needed</th></tr></thead>
+          <tbody><tr><td><code>storage</code></td><td>Settings and local counters</td></tr>
+          <tr><td><code>contextMenus</code></td><td>The <em>Scan with Leeway</em> right-click item</td></tr>
+          <tr><td><code>activeTab</code></td><td>Lets the popup read the current tab&#39;s site when you click it, for <em>Pause on this site</em>. No access to other tabs or history.</td></tr>
+          <tr><td>Content scripts on all sites</td><td>Any site can ask your wallet to sign, so Guard must be present on every page to see the request first. It does not read page content otherwise.</td></tr>
+          <tr><td>Host access: PublicNode, GoPlus, DefiLlama, CoinGecko</td><td>Simulation, risk and price lookups. Nothing else is contacted.</td></tr></tbody></table>
+
+        <h3>Privacy</h3>
+        <p>No account, no telemetry, no backend of ours. Guard never touches keys or seed phrases: it reads the request on its way to the wallet, and that is all. When a site asks you to sign, the transaction goes to PublicNode for simulation, the addresses involved to GoPlus for reputation, and token addresses to DefiLlama / CoinGecko for prices. Full details: <a href="privacy.html">Privacy policy</a>.</p>
+        <div class="callout callout--warn"><b>Limits</b> Guard shows what a request would do on current chain state. State can change between the check and the signature, and risk data comes from third-party heuristics. It reduces risk; it cannot remove it.</div>
+      </section>
+
       <section id="security" class="doc-sec">
         <h2>Security model</h2>
         <div class="threats">
@@ -727,7 +797,7 @@ npx leeway-mcp http --port 3333
         <ul class="road">
           <li class="done"><em>Phase 1 · Q3 2026</em><b>Genesis</b>Market and wallet tools on 7 EVM chains, stdio transport, MIT license.</li>
           <li class="done"><em>Phase 2 · Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓, docs &amp; live playground ✓, guarded swap quotes ✓, pre-sign transaction simulation ✓. Still to do: npm publish and MCP registries, once the GitHub account is set up.</li>
-          <li class="now"><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>Agent wallet ✓, policy-gated execution ✓, x402 settlement in USDC ✓, Telegram / CLI / HTTP approvals ✓, HTTP transport ✓. Next: ERC-4337 smart accounts with scoped session keys, ERC-20 sells with exact allowances, email approvals, security audit #1.</li>
+          <li class="now"><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>Agent wallet ✓, policy-gated execution ✓, x402 settlement in USDC ✓, Telegram / CLI / HTTP approvals ✓, HTTP transport ✓, <a href="#guard">Leeway Guard</a> browser extension v0.1 (Firefox and Edge stores first, then Chrome). Next: ERC-4337 smart accounts with scoped session keys, ERC-20 sells with exact allowances, email approvals, security audit #1.</li>
           <li><em>Phase 4 · Q1–Q2 2027</em><b>Equity Rails</b>Tokenized stock quotes, Parity Guard, market-hours and corporate-action awareness, equity guardrails, read-only brokerage sync. See <a href="#equities">Equity Rails</a>.</li>
           <li><em>Phase 5 · Q2 2027</em><b>Token generation</b>Audit #2, LWAY TGE on Base (fair launch), DEX liquidity on Uniswap v4 &amp; Aerodrome with LP locked 12 months, CoinGecko / CoinMarketCap applications, sLWAY staking.</li>
           <li><em>Phase 6 · Q3 2027</em><b>Gateway network</b>Hosted gateway and node operators, x402 fee share, Solana support, tier-2 exchange listings.</li>
@@ -739,6 +809,8 @@ npx leeway-mcp http --port 3333
         <h2>FAQ</h2>
         <details><summary>Do I need an API key or wallet?</summary><p>No API keys: everything runs on free public endpoints. The 11 read-only tools need no wallet. To let the agent act, the owner creates a small agent wallet with <code>npx leeway-mcp init-wallet</code>.</p></details>
         <details><summary>Can my agent actually move money today?</summary><p>Yes, from v0.3, within limits. It can send transactions, swap the native token and pay x402 merchants from its own wallet, and only after simulation, the policy engine and, when the policy asks, your approval. By default it can do this only on the Base Sepolia testnet; mainnets are opt-in through <code>LEEWAY_EXECUTION_CHAINS</code>.</p></details>
+        <details><summary>Does Leeway Guard replace my wallet?</summary><p>No. It sits in front of your wallet: it reads the signature request, shows what it would do, and then passes the original request to MetaMask, Rabby or any other wallet if you continue. Your wallet still holds your keys and does the signing.</p></details>
+        <details><summary>Does Leeway Guard see my keys?</summary><p>No. It never touches keys, seed phrases or passwords. It only reads the request a website sends to the wallet, before the wallet receives it. See the <a href="privacy.html">privacy policy</a>.</p></details>
         <details><summary>Which AI models work with it?</summary><p>Any model behind an MCP-capable client: Claude (Desktop, Code), Cursor, Windsurf, Zed, Cline, the OpenAI Agents SDK, or your own agent built on the MCP SDK.</p></details>
         <details><summary>Is my data sent anywhere?</summary><p>Only the queries a tool needs: token ids to CoinGecko, addresses to the RPC and GoPlus. Leeway has no telemetry.</p></details>
         <details><summary>What happens when a data source is down?</summary><p>The tool returns <code>isError: true</code> with the reason. Requests time out after 12 seconds, so the agent is never left hanging.</p></details>

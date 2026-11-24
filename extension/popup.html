@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leeway Guard</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="top">
+    <svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e7b94f"/><stop offset="1" stop-color="#8a5a17"/></linearGradient></defs><g fill="url(#g)" transform="translate(0 -1.2)"><g transform="rotate(8 20 20)"><path d="M10 4V30.5H25Z"/><path d="M14.6 8.4 28.4 30.5H33Z"/></g><path d="M5 34.2h30l-2.6 3H7.6Z"/></g></svg>
+    <div class="brand"><b>Leeway Guard</b><span>See what you sign.</span></div>
+    <label class="switch" title="Protection on/off"><input type="checkbox" id="enabled" /><i></i></label>
+  </header>
+
+  <section class="status" id="status"><i class="pulse"></i><span id="statusText">Protecting every site</span></section>
+
+  <section class="stats">
+    <div><b id="checked">0</b><span>checked</span></div>
+    <div><b id="warned">0</b><span>warned</span></div>
+    <div><b id="blocked">0</b><span>rejected</span></div>
+  </section>
+
+  <label class="row-toggle">
+    <span><b>Pause on this site</b><small id="site">this site</small></span>
+    <span class="switch switch--sm"><input type="checkbox" id="pause" /><i></i></span>
+  </label>
+
+  <section class="hist">
+    <h2>Last checks</h2>
+    <ol id="history"><li class="empty">Nothing checked yet. Open a dApp and press Swap or Sign.</li></ol>
+  </section>
+
+  <footer>
+    <a href="https://leeway-mcp.xyz" target="_blank" rel="noopener">Site</a>
+    <a href="https://leeway-mcp.xyz/docs.html#extension" target="_blank" rel="noopener">Docs</a>
+    <a href="https://github.com/YOUR_GITHUB/leeway-mcp" target="_blank" rel="noopener">GitHub</a>
+    <span>v0.1.0 · local, no account</span>
+  </footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Leeway Guard",
+  "short_name": "Leeway Guard",
+  "version": "0.1.0",
+  "description": "See what you sign. Simulates transactions and decodes permit signatures before your wallet opens. Local, open source, no account.",
+  "homepage_url": "https://github.com/YOUR_GITHUB/leeway-mcp/tree/main/extension",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_title": "Leeway Guard",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }
+  },
+  "background": { "service_worker": "background.js", "scripts": ["background.js"], "type": "module" },
+  "permissions": ["storage", "contextMenus", "activeTab"],
+  "host_permissions": [
+    "https://*.publicnode.com/*",
+    "https://api.gopluslabs.io/*",
+    "https://coins.llama.fi/*",
+    "https://api.coingecko.com/*"
+  ],
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_start", "all_frames": false },
+    { "matches": ["<all_urls>"], "js": ["inject.js"], "run_at": "document_start", "all_frames": false, "world": "MAIN" }
+  ],
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'" },
+  "browser_specific_settings": {
+    "gecko": { "id": "guard@leeway-mcp.xyz", "strict_min_version": "128.0", "data_collection_permissions": { "required": ["none"] } }
+  }
+}
