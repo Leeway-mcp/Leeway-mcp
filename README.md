@@ -41,6 +41,14 @@ Leeway puts a **policy engine** between the agent and the money. The model never
 | `x402_quote` | Reads the price of an HTTP 402 (x402) paywalled resource and runs the policy check |
 | `spending_report` | Today's spend, remaining budget, active limits |
 
+**Equity Rails (3, new in v0.4, read-only)**
+
+| Tool | What it does |
+|---|---|
+| `get_equity_quote` | US stock reference price (Yahoo, Nasdaq fallback) plus on-chain prices of verified tokenized versions (xStocks, Ondo Global Markets) |
+| `parity_check` | **Parity Guard**: premium or discount of each tokenized share vs the real stock; `ABOVE_BAND` blocks buys (default band 0.5%, `LEEWAY_EQ_PARITY_BAND_PCT`) |
+| `market_hours` | NYSE open / closed now, next open and close, holidays and early closes, DST-correct |
+
 **Execution and approvals (6, new in v0.3)**
 
 | Tool | What it does |
@@ -168,7 +176,8 @@ Install from source today: Chrome / Edge / Brave → `chrome://extensions` → D
 - [x] Approval webhooks with HMAC signatures (email via Zapier / Make / n8n / Resend)
 - [x] Leeway Guard browser extension v0.1.1 (transactions, Permit / Permit2, personal_sign, SIWE)
 - [ ] Independent security audit #1
-- [ ] **Equity Rails**: tokenized stock quotes, Parity Guard (blocks buys above the real exchange price), equity guardrails (per-ticker and sector caps, market hours, no leverage)
+- [x] **Equity Rails, read-only**: tokenized stock quotes (TSLA, AAPL, NVDA, SPY via xStocks and Ondo), Parity Guard, NYSE market hours
+- [ ] Equity guardrails for execution: per-ticker and sector caps, market-hours-only trading, no leverage
 - [ ] Solana support
 - [ ] Hosted gateway
 

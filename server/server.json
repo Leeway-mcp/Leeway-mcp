@@ -6,12 +6,12 @@
     "url": "https://github.com/YOUR_GITHUB/leeway-mcp",
     "source": "github"
   },
-  "version": "0.3.1",
+  "version": "0.4.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "leeway-mcp",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "transport": {
         "type": "stdio"
       },
@@ -85,6 +85,13 @@
           "isRequired": false,
           "format": "string",
           "isSecret": true
+        },
+        {
+          "name": "LEEWAY_EQ_PARITY_BAND_PCT",
+          "description": "Parity Guard: max premium (%) a tokenized stock may trade above the real share (default 0.5)",
+          "isRequired": false,
+          "format": "number",
+          "isSecret": false
         }
       ]
     }

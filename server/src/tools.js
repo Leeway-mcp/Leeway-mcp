@@ -8,6 +8,7 @@ import { loadAccount, execution } from './wallet.js';
 import { executeTx, executeSwap, payX402 } from './execute.js';
 import { getApproval, listApprovals } from './approvals.js';
 import { telegramEnabled } from './telegram.js';
+import { equityQuote, parityCheck, marketStatus, TICKER_RE } from './equities.js';
 
 export const ctx = { CHAINS: data.CHAINS, rpc: data.rpc, getJSON: data.getJSON, tokenSecurity: data.tokenSecurity, addressSecurity: data.addressSecurity, evaluate };
 
@@ -23,7 +24,7 @@ const READ = { readOnlyHint: true, openWorldHint: true };
 const ALIASES = { btc: 'bitcoin', eth: 'ethereum', sol: 'solana', bnb: 'binancecoin', usdc: 'usd-coin', usdt: 'tether', tao: 'bittensor', fet: 'fetch-ai', render: 'render-token', near: 'near', virtual: 'virtual-protocol', avax: 'avalanche-2', pol: 'polygon-ecosystem-token', arb: 'arbitrum', op: 'optimism', link: 'chainlink', doge: 'dogecoin' };
 
 export function createServer() {
-  const server = new McpServer({ name: 'leeway-mcp', version: '0.3.1' });
+  const server = new McpServer({ name: 'leeway-mcp', version: '0.4.0' });
   /* ---------------- market ---------------- */
   server.registerTool('get_price', {
     title: 'Get token prices',
@@ -190,6 +191,7 @@ export function createServer() {
   server.registerResource('policy', 'leeway://policy', { title: 'Active spending policy', mimeType: 'application/json' },
     async (uri) => ({ contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(policy, null, 2) }] }));
 
+  registerEquityTools(server);
   registerExecutionTools(server);
   return server;
 }
@@ -199,6 +201,35 @@ const WRITE = { readOnlyHint: false, destructiveHint: true, openWorldHint: true 
 const ExecChain = z.enum(data.CHAIN_NAMES).default('base-sepolia');
 const ApprovalId = z.string().regex(/^[0-9A-Fa-f]{6}$/).optional().describe('Id of an approval the owner granted for exactly these arguments');
 const Decimal = z.string().regex(/^\d+(\.\d+)?$/, 'must be a decimal number');
+
+/* ---------------- Equity Rails (phase 4, read-only) ---------------- */
+const Ticker = z.string().regex(TICKER_RE, 'must be a stock ticker, e.g. "TSLA"').describe('US stock or ETF ticker, e.g. TSLA, AAPL, NVDA, SPY');
+
+function registerEquityTools(server) {
+  server.registerTool('get_equity_quote', {
+    title: 'Stock quote + tokenized versions',
+    description: 'Reference exchange price for a US stock or ETF (Yahoo Finance, Nasdaq fallback) with previous close, change and market session, plus the on-chain price and premium of each verified tokenized version (xStocks, Ondo Global Markets) with contract addresses.',
+    inputSchema: { ticker: Ticker },
+    annotations: READ,
+  }, safe(({ ticker }) => equityQuote({ ticker })));
+
+  server.registerTool('parity_check', {
+    title: 'Parity Guard',
+    description: 'Premium or discount of each tokenized version of a stock against the real exchange price. ABOVE_BAND means an agent must not buy (it would pay more than the share is worth); BELOW_BAND flags a possible depeg or stale price. Run this before buying any tokenized stock.',
+    inputSchema: {
+      ticker: Ticker,
+      band_pct: z.number().positive().max(10).optional().describe('Allowed premium in percent (default LEEWAY_EQ_PARITY_BAND_PCT or 0.5)'),
+    },
+    annotations: READ,
+  }, safe(({ ticker, band_pct }) => parityCheck({ ticker, bandPct: band_pct })));
+
+  server.registerTool('market_hours', {
+    title: 'US market hours',
+    description: 'Whether the NYSE / Nasdaq regular session is open right now, the current session (pre-market, regular, after-hours, closed), when it closes or next opens (UTC and New York time), and the next holidays and 13:00 ET early closes.',
+    inputSchema: { market: z.enum(['XNYS', 'XNAS']).default('XNYS').describe('XNYS (NYSE) or XNAS (Nasdaq): same calendar') },
+    annotations: { readOnlyHint: true },
+  }, safe(({ market }) => ({ ...marketStatus(), market })));
+}
 
 function registerExecutionTools(server) {
   server.registerTool('wallet_info', {
