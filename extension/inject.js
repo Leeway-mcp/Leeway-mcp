@@ -120,5 +120,5 @@
   /* ---------- EIP-6963: patch announced providers before the dApp sees them ---------- */
   window.addEventListener('eip6963:announceProvider', (e) => wrap(e?.detail?.provider), true);
 
-  Object.defineProperty(window, '__leewayGuard', { value: { version: '0.1.1' } });
+  Object.defineProperty(window, '__leewayGuard', { value: { version: '0.1.2' } });
 })();

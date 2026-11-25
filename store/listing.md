@@ -44,10 +44,10 @@ Open source (MIT). Leeway Guard uses the same simulation engine as Leeway MCP, t
 Leeway Guard reduces risk; it cannot remove it. Always read what you sign.
 
 ## Privacy policy URL
-https://<domain>/privacy.html
+https://leeway-mcp.github.io/Leeway-mcp/privacy.html
 
 ## Homepage / support
-Homepage: https://<domain>/ · Source: https://github.com/<you>/leeway-mcp · Support: https://github.com/<you>/leeway-mcp/issues
+Homepage: https://leeway-mcp.github.io/Leeway-mcp/ · Source: https://github.com/Leeway-mcp/Leeway-mcp · Support: https://t.me/leewaymcp · Issues: https://github.com/Leeway-mcp/Leeway-mcp/issues
 
 ## Permission justifications (for reviewers)
 

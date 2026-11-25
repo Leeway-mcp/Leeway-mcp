@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.YOUR_GITHUB/leeway-mcp",
+  "name": "io.github.Leeway-mcp/leeway-mcp",
   "description": "Policy-guarded on-chain tools for AI agents: risk scans, guarded swaps, tx simulation, x402.",
   "repository": {
-    "url": "https://github.com/YOUR_GITHUB/leeway-mcp",
+    "url": "https://github.com/Leeway-mcp/Leeway-mcp",
     "source": "github"
   },
   "version": "0.5.0",

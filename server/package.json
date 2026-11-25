@@ -1,7 +1,7 @@
 {
   "name": "leeway-mcp",
   "version": "0.5.0",
-  "mcpName": "io.github.YOUR_GITHUB/leeway-mcp",
+  "mcpName": "io.github.Leeway-mcp/leeway-mcp",
   "description": "Open-source MCP server that gives AI agents a policy-guarded wallet: risk scans, guarded swaps, pre-sign simulation, x402 payments and human approvals via Telegram.",
   "type": "module",
   "main": "src/index.js",
@@ -46,10 +46,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_GITHUB/leeway-mcp.git",
+    "url": "git+https://github.com/Leeway-mcp/Leeway-mcp.git",
     "directory": "server"
   },
-  "homepage": "https://github.com/YOUR_GITHUB/leeway-mcp#readme",
+  "homepage": "https://github.com/Leeway-mcp/Leeway-mcp#readme",
   "license": "MIT",
   "engines": {
     "node": ">=18.17"
