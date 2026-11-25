@@ -36,4 +36,4 @@ Clear space around the mark: at least the hull height. Do not recolour the gradi
 - "Every ship is an AI agent. Every lighthouse is a Leeway check." (The Agent Sea)
 
 ## X header notes
-1500×500. On desktop the avatar covers roughly the bottom-left 370×170 px, so all copy sits above y ≈ 330 on the left; the ship and moon live on the right.
+1500×500. On X the avatar covers the bottom-left corner, so the copy starts at x ≈ 400 and the ship and moon sit on the far right.
