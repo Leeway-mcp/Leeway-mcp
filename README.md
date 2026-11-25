@@ -201,7 +201,9 @@ Found a vulnerability? See [SECURITY.md](SECURITY.md).
 
 The same simulation engine, in front of your own wallet. It intercepts `eth_sendTransaction`, `eth_signTypedData` (Permit, Permit2), `personal_sign` and Sign-In with Ethereum on any site, and shows a verdict before your wallet opens. Right-click any `0x` address for a token risk score. Local, no account, no telemetry.
 
-**Install from source:** Chrome / Edge / Brave → `chrome://extensions` → Developer mode → *Load unpacked* → `extension/`. Firefox → `about:debugging` → *Load Temporary Add-on* → `extension/manifest.json`. Store listings are on the way. Details: [extension/README.md](extension/README.md).
+**Download:** ready-made packages for Chrome, Edge and Firefox on the [latest release](https://github.com/Leeway-mcp/Leeway-mcp/releases/latest).
+
+**Install:** Chrome / Edge / Brave → `chrome://extensions` → Developer mode → *Load unpacked* → the unzipped folder (or `extension/`). Firefox → `about:debugging` → *Load Temporary Add-on* → `extension/manifest.json`. Store listings are on the way. Details: [extension/README.md](extension/README.md).
 
 ## Roadmap
 

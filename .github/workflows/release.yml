@@ -1,0 +1,46 @@
+name: Release Leeway Guard
+# Push a tag like guard-v0.1.2 to build the extension for Chrome, Edge and Firefox
+# and publish the zips on a GitHub Release.
+on:
+  push:
+    tags: ['guard-v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Version matches the tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          V=$(node -p "require('./extension/manifest.json').version")
+          T="${GITHUB_REF_NAME#guard-v}"
+          [ "$V" = "$T" ] || { echo "manifest version $V does not match tag $T"; exit 1; }
+      - name: Build packages
+        run: node extension/scripts/pack.mjs
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Leeway Guard ${{ github.ref_name }}
+          generate_release_notes: false
+          body: |
+            **Leeway Guard: see what you sign.** A browser extension that shows what a wallet transaction or signature will really do before MetaMask or Rabby opens.
+
+            ### Install
+            **Chrome · Edge · Brave**
+            1. Download `leeway-guard-*-chrome.zip` below and unzip it.
+            2. Open `chrome://extensions`, turn on **Developer mode**.
+            3. Click **Load unpacked** and select the unzipped folder.
+
+            **Firefox**
+            1. Download `leeway-guard-*-firefox.zip`.
+            2. Open `about:debugging` → **This Firefox** → **Load Temporary Add-on** → pick the zip (or `manifest.json` inside it).
+
+            Store listings (Chrome Web Store, Firefox Add-ons, Edge Add-ons) are on the way.
+
+            Local, open source, no account, no telemetry. Source: [`extension/`](https://github.com/Leeway-mcp/Leeway-mcp/tree/main/extension) · Changes: [CHANGELOG](https://github.com/Leeway-mcp/Leeway-mcp/blob/main/CHANGELOG.md)
+          files: extension/dist/*.zip

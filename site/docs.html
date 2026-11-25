@@ -776,8 +776,8 @@ npx leeway-mcp http --port 3333
           <tr><td><code>WILL REVERT</code></td><td>The transaction would fail on-chain and only burn gas. The reason is shown.</td></tr></tbody></table>
         <p>You always decide. <em>Continue to wallet</em> passes the original, unmodified request to your wallet; <em>Reject</em> returns the standard "user rejected" error (EIP-1193 code 4001) to the website.</p>
 
-        <h3>Install from source</h3>
-        <p>Store listings are on the way (below). Until then the extension installs from the open-source repository in under a minute:</p>
+        <h3>Install</h3>
+        <p>Store listings are on the way (below). Until then, download the ready-made package from the <a href="https://github.com/Leeway-mcp/Leeway-mcp/releases/latest" target="_blank" rel="noopener">latest GitHub release</a> (<code>leeway-guard-*-chrome.zip</code> or <code>-firefox.zip</code>), or install straight from the source:</p>
         <div class="tabs" data-tabs>
           <div class="tabs__head" role="tablist">
             <button role="tab" class="is-on" data-tab="chromium">Chrome · Edge · Brave</button>
@@ -785,9 +785,9 @@ npx leeway-mcp http --port 3333
           </div>
           <div class="tabs__panel is-on" data-panel="chromium">
             <ol class="steps">
-              <li>Download the repository from GitHub (Code → Download ZIP) and unzip it, or <code>git clone</code> it.</li>
+              <li>Unzip <code>leeway-guard-*-chrome.zip</code> from the <a href="https://github.com/Leeway-mcp/Leeway-mcp/releases/latest" target="_blank" rel="noopener">latest release</a> (or use the <code>extension/</code> folder of the repository).</li>
               <li>Open <code>chrome://extensions</code> (<code>edge://extensions</code>, <code>brave://extensions</code>) and switch on <b>Developer mode</b>.</li>
-              <li>Click <b>Load unpacked</b> and select the <code>extension/</code> folder.</li>
+              <li>Click <b>Load unpacked</b> and select the unzipped folder (or <code>extension/</code>).</li>
               <li>Pin Leeway Guard to the toolbar. Open any dApp: the next signature request goes through Guard first.</li>
             </ol>
           </div>
