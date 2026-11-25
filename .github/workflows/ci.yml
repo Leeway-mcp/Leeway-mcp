@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install
+        working-directory: server
+        run: npm ci
+      - name: Syntax check (server, extension, site scripts)
+        run: |
+          for f in server/src/*.js server/scripts/*.mjs server/test/*.js extension/*.js extension/lib/*.js extension/scripts/*.mjs site/js/*.js; do
+            node --check "$f" || exit 1
+          done
+      - name: Shared core is in sync (site playground + extension)
+        run: |
+          node server/scripts/sync-site.mjs --check
+          node extension/scripts/sync-core.mjs --check
+      - name: Boot test (offline)
+        working-directory: server
+        run: node test/boot.js
+      - name: Extension package validates
+        run: node extension/scripts/pack.mjs

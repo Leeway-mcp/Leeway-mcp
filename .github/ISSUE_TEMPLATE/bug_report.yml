@@ -1,0 +1,35 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Security problem? Do not file it here, see SECURITY.md."
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [MCP server, Leeway Guard extension, Website / docs]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "server 0.5.0 / extension 0.1.2"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Tool name and arguments, chain, browser and wallet if relevant. Never paste private keys.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output or logs
+      render: shell

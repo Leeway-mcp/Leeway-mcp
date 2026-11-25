@@ -1,0 +1,20 @@
+name: Feature request
+description: A tool, a check or a chain you need
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The agent or wallet situation, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed tool or behaviour
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety considerations
+      description: Can this move funds? How should the policy engine treat it?

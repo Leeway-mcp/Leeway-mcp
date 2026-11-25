@@ -20,7 +20,8 @@
     "inspect": "npx @modelcontextprotocol/inspector node src/index.js",
     "test:exec": "node test/execution.js",
     "test:equities": "node test/equities.js",
-    "test:smart": "node test/smart.js"
+    "test:smart": "node test/smart.js",
+    "test:boot": "node test/boot.js"
   },
   "keywords": [
     "mcp",
