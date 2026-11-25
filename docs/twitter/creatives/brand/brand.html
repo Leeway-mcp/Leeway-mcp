@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Leeway brand renders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #07070b; --gold-1: #fff2c4; --gold-2: #e7b94f; --gold-3: #8a5a17;
+    --muted: #9a9aa8; --line: rgba(231, 185, 79, 0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; }
+  body { font-family: 'Instrument Sans', system-ui, sans-serif; color: #f3f3f6; }
+  .stage { display: none; position: relative; overflow: hidden; }
+  body[data-v="header"] #header, body[data-v="avatar"] #avatar, body[data-v="mark"] #mark,
+  body[data-v="lockup-dark"] #lockup, body[data-v="lockup-light"] #lockup { display: block; }
+
+  /* ---------- X header 1500x500 ---------- */
+  #header { width: 1500px; height: 500px; background:
+      radial-gradient(48% 90% at 76% 58%, rgba(231, 185, 79, 0.16), transparent 62%),
+      radial-gradient(40% 70% at 8% 100%, rgba(16, 26, 58, 0.85), transparent 70%),
+      linear-gradient(180deg, #08080d 0%, #07070b 60%, #06060a 100%); }
+  #header .grid { position: absolute; inset: 0; }
+  #header .moon { position: absolute; left: 1290px; top: 66px; width: 64px; height: 64px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 36%, #fffbe9, #f3d58e 55%, #c9952f);
+    box-shadow: 0 0 60px 18px rgba(243, 213, 142, 0.22), 0 0 160px 60px rgba(231, 185, 79, 0.10); opacity: 0.9; }
+  #header .horizon { position: absolute; left: 0; right: 0; top: 380px; height: 1px;
+    background: linear-gradient(90deg, transparent 2%, rgba(231, 185, 79, 0.25) 28%, rgba(255, 226, 150, 0.85) 76%, rgba(231, 185, 79, 0.25) 96%, transparent); }
+  #header .sea { position: absolute; left: 0; right: 0; top: 381px; bottom: 0;
+    background: linear-gradient(180deg, rgba(231, 185, 79, 0.05), transparent 70%); }
+  #header .path { position: absolute; left: 1060px; top: 382px; width: 216px; height: 118px;
+    background: repeating-linear-gradient(180deg, rgba(255, 226, 150, 0.55) 0 2px, transparent 2px 9px);
+    -webkit-mask: radial-gradient(50% 100% at 50% 0%, #000 30%, transparent 75%); mask: radial-gradient(50% 100% at 50% 0%, #000 30%, transparent 75%); opacity: 0.6; }
+  #header .glitter { position: absolute; left: 1296px; top: 382px; width: 52px; height: 118px; background: repeating-linear-gradient(180deg, rgba(255, 240, 200, 0.5) 0 1px, transparent 1px 7px); -webkit-mask: radial-gradient(50% 100% at 50% 0%, #000 20%, transparent 80%); mask: radial-gradient(50% 100% at 50% 0%, #000 20%, transparent 80%); opacity: 0.55; }
+  #header .ship { position: absolute; left: 1060px; top: 179px; width: 216px; height: 216px; filter: drop-shadow(0 18px 40px rgba(231, 185, 79, 0.28)); }
+  #header .reflect { position: absolute; left: 1060px; top: 374px; width: 216px; height: 216px; transform: scaleY(-0.55); transform-origin: top;
+    opacity: 0.22; filter: blur(1.5px); -webkit-mask: linear-gradient(180deg, #000 20%, transparent 85%); mask: linear-gradient(180deg, #000 20%, transparent 85%); }
+  #header .copy { position: absolute; left: 132px; top: 76px; width: 760px; }
+  #header .word { display: flex; align-items: center; gap: 16px; font-weight: 600; font-size: 30px; letter-spacing: 0.32em; color: #f6f1e4; }
+  #header .word svg { width: 38px; height: 38px; }
+  #header h1 { margin-top: 30px; font-weight: 500; font-size: 58px; line-height: 1.04; letter-spacing: -0.025em; color: #f4f4f7; }
+  #header h1 em { font-style: italic; font-weight: 400; background: linear-gradient(100deg, var(--gold-1), var(--gold-2) 55%, #c18a2c); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 4px; }
+  #header h1 span { color: #8d8d9a; }
+  #header .tags { margin-top: 30px; display: flex; gap: 10px; }
+  #header .tags b { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: #e9dcb8;
+    padding: 8px 13px; border: 1px solid rgba(231, 185, 79, 0.32); border-radius: 100px; background: rgba(12, 12, 18, 0.6); }
+  #header .tags b i { display: inline-block; width: 6px; height: 6px; margin-right: 9px; border-radius: 50%; background: var(--gold-2); box-shadow: 0 0 10px rgba(231, 185, 79, 0.9); vertical-align: 2px; }
+  #header .coords { position: absolute; right: 44px; bottom: 26px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.22em; color: rgba(231, 185, 79, 0.55); }
+  #header .frame { position: absolute; inset: 18px; border: 1px solid rgba(231, 185, 79, 0.08); pointer-events: none; }
+  #header .frame::before, #header .frame::after { content: ''; position: absolute; width: 14px; height: 14px; border: 1px solid rgba(231, 185, 79, 0.55); }
+  #header .frame::before { left: -1px; top: -1px; border-width: 1px 0 0 1px; }
+  #header .frame::after { right: -1px; top: -1px; border-width: 1px 1px 0 0; }
+
+  /* ---------- avatar 400x400 ---------- */
+  #avatar { width: 400px; height: 400px; background:
+      radial-gradient(60% 60% at 50% 40%, rgba(231, 185, 79, 0.20), transparent 70%),
+      radial-gradient(circle at 50% 50%, #12121b, #07070b 72%); }
+  #avatar svg { position: absolute; left: 92px; top: 86px; width: 216px; height: 216px; filter: drop-shadow(0 10px 30px rgba(231, 185, 79, 0.35)); }
+  #avatar .ring { position: absolute; inset: 22px; border-radius: 50%; border: 1px solid rgba(231, 185, 79, 0.22); }
+
+  /* ---------- mark 1024 (transparent) ---------- */
+  #mark { width: 1024px; height: 1024px; }
+  #mark svg { position: absolute; inset: 64px; width: 896px; height: 896px; }
+
+  /* ---------- horizontal lockup 2000x560 (transparent) ---------- */
+  #lockup { width: 2000px; height: 560px; }
+  #lockup .row { position: absolute; left: 80px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 64px; }
+  #lockup svg { width: 400px; height: 400px; }
+  #lockup b { font-weight: 600; font-size: 250px; letter-spacing: 0.16em; line-height: 1; }
+  body[data-v="lockup-dark"] #lockup b { color: #f6f1e4; }
+  body[data-v="lockup-light"] #lockup b { color: #111014; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e7b94f"/><stop offset="1" stop-color="#8a5a17"/></linearGradient>
+    <linearGradient id="gd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e7b94f"/><stop offset=".55" stop-color="#b98328"/><stop offset="1" stop-color="#6e4610"/></linearGradient>
+    <symbol id="drift" viewBox="0 0 40 40"><g transform="translate(0 -1.2)"><g transform="rotate(8 20 20)"><path d="M10 4V30.5H25Z"/><path d="M14.6 8.4 28.4 30.5H33Z"/></g><path d="M5 34.2h30l-2.6 3H7.6Z"/></g></symbol>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="rgba(231,185,79,0.065)" stroke-width="1"/></pattern>
+  </defs>
+</svg>
+
+<section class="stage" id="header">
+  <svg class="grid" width="1500" height="500"><rect width="1500" height="500" fill="url(#grid)"/>
+    <g fill="rgba(231,185,79,0.35)" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="2">
+      <text x="300" y="40">20°E</text><text x="600" y="40">30°E</text><text x="900" y="40">40°E</text><text x="1200" y="40">50°E</text>
+    </g>
+    <g stroke="rgba(231,185,79,0.3)"><path d="M300 18v8M600 18v8M900 18v8M1200 18v8M450 18v4M750 18v4M1050 18v4M1350 18v4"/></g>
+  </svg>
+  <div class="frame"></div>
+  <div class="moon"></div>
+  <div class="sea"></div>
+  <div class="horizon"></div>
+  <div class="path"></div>
+  <div class="glitter"></div>
+  <svg class="reflect" viewBox="0 0 40 40"><use href="#drift" fill="url(#gd)"/></svg>
+  <svg class="ship" viewBox="0 0 40 40"><use href="#drift" fill="url(#g)"/></svg>
+  <div class="copy">
+    <div class="word"><svg viewBox="0 0 40 40"><use href="#drift" fill="url(#g)"/></svg>LEEWAY</div>
+    <h1>Give your agents <em>leeway,</em><br /><span>not a private key.</span></h1>
+    <div class="tags"><b><i></i>MCP server</b><b><i></i>Browser extension</b><b><i></i>Open source</b></div>
+  </div>
+  <div class="coords">SEE WHAT YOU SIGN</div>
+</section>
+
+<section class="stage" id="avatar"><div class="ring"></div><svg viewBox="0 0 40 40"><use href="#drift" fill="url(#g)"/></svg></section>
+<section class="stage" id="mark"><svg viewBox="0 0 40 40"><use href="#drift" fill="url(#g)"/></svg></section>
+<section class="stage" id="lockup"><div class="row"><svg viewBox="0 0 40 40"><use href="#drift" fill="url(#g)"/></svg><b>LEEWAY</b></div></section>
+
+<script>
+  document.body.dataset.v = new URLSearchParams(location.search).get('v') || 'header';
+  document.fonts.ready.then(() => { window.__ready = true; });
+</script>
+</body>
+</html>
