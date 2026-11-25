@@ -1,6 +1,6 @@
 # Leeway Guard
 
-**See what you sign.** A browser extension (v0.1.2) that checks every transaction, permit and message signature before your wallet opens, using the same simulation engine as the Leeway MCP server.
+**See what you sign.** A browser extension (v0.1.3) that checks every transaction, permit and message signature before your wallet opens, using the same simulation engine as the Leeway MCP server.
 
 Works with any wallet that injects an EIP-1193 provider (MetaMask, Rabby, Coinbase Wallet, Phantom EVM, Rainbow…) on any dApp. Open source, local, no account.
 

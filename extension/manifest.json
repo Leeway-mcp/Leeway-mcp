@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Leeway Guard",
   "short_name": "Leeway Guard",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "See what you sign. Simulates transactions and decodes permit signatures before your wallet opens. Local, open source, no account.",
   "homepage_url": "https://github.com/Leeway-mcp/Leeway-mcp/tree/main/extension",
   "icons": {

@@ -28,6 +28,9 @@
 
 ## Leeway Guard (browser extension)
 
+### 0.1.3
+- Popup docs link points to leeway.icu
+
 ### 0.1.2
 - Links to docs, GitHub and Telegram in the popup
 

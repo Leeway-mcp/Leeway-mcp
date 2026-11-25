@@ -28,6 +28,6 @@ npx leeway-mcp approve <id>    # approve a parked spend
 npx leeway-mcp http            # remote agents over Streamable HTTP
 ```
 
-Full docs, configuration and roadmap: [github.com/Leeway-mcp/Leeway-mcp](https://github.com/Leeway-mcp/Leeway-mcp) · [Website](https://leeway-mcp.github.io/Leeway-mcp/) · [X](https://x.com/Leewayicu) · [Telegram](https://t.me/leewaymcp)
+Full docs, configuration and roadmap: [github.com/Leeway-mcp/Leeway-mcp](https://github.com/Leeway-mcp/Leeway-mcp) · [Website](https://leeway.icu/) · [X](https://x.com/Leewayicu) · [Telegram](https://t.me/leewaymcp)
 
 MIT · Not financial advice.

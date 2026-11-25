@@ -13,9 +13,9 @@
 </p>
 
 <p align="center">
-  <a href="https://leeway-mcp.github.io/Leeway-mcp/"><b>Website</b></a> ·
-  <a href="https://leeway-mcp.github.io/Leeway-mcp/docs.html"><b>Docs</b></a> ·
-  <a href="https://leeway-mcp.github.io/Leeway-mcp/sea.html"><b>The Agent Sea</b></a> ·
+  <a href="https://leeway.icu/"><b>Website</b></a> ·
+  <a href="https://leeway.icu/docs.html"><b>Docs</b></a> ·
+  <a href="https://leeway.icu/sea.html"><b>The Agent Sea</b></a> ·
   <a href="extension/"><b>Leeway Guard</b></a> ·
   <a href="https://t.me/leewaymcp"><b>Telegram</b></a> ·
   <a href="https://x.com/Leewayicu"><b>X</b></a>
