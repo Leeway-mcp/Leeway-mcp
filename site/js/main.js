@@ -507,3 +507,102 @@ $$('.post-art').forEach((cv) => {
     else if (!e.isIntersecting && timer) { clearInterval(timer); clearInterval(watch); timer = watch = null; }
   }).observe(card);
 })();
+
+/* ---------- the voyage: pinned scroll story ---------- */
+(() => {
+  const sec = $('#voyage');
+  if (!sec) return;
+  const track = $('#vyTrack'), route = $('#vyRoute'), done = $('#vyRouteDone'), ship = $('#vyShip');
+  const wpWrap = $('#vyWps'), cards = $$('.vy-card', sec), steps = $$('.vy-progress span', sec), bar = $('#vyBar'), coords = $('#vyCoords');
+  const L = route.getTotalLength();
+  const WP = [0.12, 0.38, 0.63, 0.88];
+  const NAMES = ['Read the sea', 'Simulate', 'Ask the captain', 'Sign & sail'];
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+  const wps = WP.map((f, i) => {
+    const p = route.getPointAtLength(f * L);
+    const g = el('g', { class: 'vy-wp', transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})` });
+    g.append(el('circle', { r: 16, class: 'vy-wp__halo' }), el('circle', { r: 10, class: 'vy-wp__dot' }));
+    const num = el('text', { class: 'vy-wp__num', 'text-anchor': 'middle', y: 3.6 }); num.textContent = String(i + 1).padStart(2, '0');
+    const lbl = el('text', { class: 'vy-wp__lbl', 'text-anchor': 'middle', y: i % 2 ? 32 : -22 }); lbl.textContent = NAMES[i];
+    g.append(num, lbl);
+    wpWrap.append(g);
+    return g;
+  });
+  done.style.strokeDasharray = `${L} ${L}`;
+
+  const isStatic = () => reduced || matchMedia('(max-width: 900px), (max-height: 620px)').matches;
+  let staticMode = null, active = -1, shown = -1, visible = false, raf = 0;
+
+  const place = (p) => {
+    const at = Math.max(0.001, Math.min(0.999, p)) * L;
+    const a = route.getPointAtLength(at), b = route.getPointAtLength(Math.min(L, at + 6));
+    const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+    const tilt = Math.max(-16, Math.min(16, ang * 0.3)); // keep the sails readable: heel, don't spin
+    const bob = Math.sin(performance.now() / 650) * 1.6;
+    ship.setAttribute('transform', `translate(${a.x.toFixed(1)} ${(a.y + bob).toFixed(1)}) rotate(${tilt.toFixed(1)})`);
+    done.style.strokeDashoffset = (L - at).toFixed(1);
+    if (coords) coords.textContent = `LAT ${(24 + (520 - a.y) / 40).toFixed(2)}°N · LON ${(10 + a.x / 20).toFixed(2)}°E · HDG ${String(Math.round((90 + ang + 360) % 360)).padStart(3, '0')}°`;
+  };
+  const setChapter = (i) => {
+    if (i === active) return;
+    active = i;
+    wps.forEach((w, k) => w.classList.toggle('is-lit', k <= i));
+    steps.forEach((s, k) => s.classList.toggle('is-on', k <= i));
+    if (i !== shown) { shown = i; cards.forEach((c, k) => c.classList.toggle('is-on', k === i)); }
+  };
+  const progress = () => {
+    const r = track.getBoundingClientRect();
+    const span = r.height - innerHeight;
+    return span > 0 ? Math.max(0, Math.min(1, -r.top / span)) : 0;
+  };
+  let smooth = 0, last = performance.now();
+  const frame = () => {
+    raf = 0;
+    if (staticMode || !visible) return;
+    const now = performance.now(), dt = Math.min(0.25, (now - last) / 1000); last = now;
+    const p = progress();
+    smooth += (p - smooth) * (1 - Math.exp(-dt * 9)); // frame-rate independent easing
+    if (Math.abs(p - smooth) < 0.0005) smooth = p;
+    place(smooth);
+    bar.style.transform = `scaleX(${smooth.toFixed(4)})`;
+    let ch = 0;
+    WP.forEach((f, k) => { if (p + 0.03 >= f) ch = k; }); // chapters follow the real scroll position
+    setChapter(ch);
+    raf = requestAnimationFrame(frame);
+  };
+  const apply = () => {
+    const s = isStatic();
+    if (s === staticMode) return;
+    staticMode = s;
+    sec.classList.toggle('voyage--static', s);
+    if (s) { place(0.999); wps.forEach((w) => w.classList.add('is-lit')); cards.forEach((c) => c.classList.add('is-on')); active = shown = -1; }
+    else { cards.forEach((c, k) => c.classList.toggle('is-on', k === 0)); active = shown = -1; smooth = progress(); setChapter(0); if (visible && !raf) raf = requestAnimationFrame(frame); }
+  };
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && !staticMode && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }, { rootMargin: '100px 0px' }).observe(track);
+  addEventListener('resize', apply, { passive: true });
+  apply();
+  if (!staticMode) place(0);
+})();
+
+/* ---------- cross-page transitions: native View Transitions, gold curtain fallback ---------- */
+(() => {
+  if (reduced || 'PageRevealEvent' in window) return; // native cross-document transitions handle it
+  const curtain = document.createElement('div');
+  curtain.className = 'sail-curtain';
+  curtain.setAttribute('aria-hidden', 'true');
+  curtain.innerHTML = '<svg viewBox="0 0 40 40"><defs><linearGradient id="scG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e7b94f"/><stop offset="1" stop-color="#8a5a17"/></linearGradient></defs><g fill="url(#scG)" transform="translate(0 -1.2)"><g transform="rotate(8 20 20)"><path d="M10 4V30.5H25Z"/><path d="M14.6 8.4 28.4 30.5H33Z"/></g><path d="M5 34.2h30l-2.6 3H7.6Z"/></g></svg>';
+  document.body.appendChild(curtain);
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (a.target && a.target !== '_self') return;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin || !/\.html$|\/$/.test(url.pathname)) return;
+    if (url.pathname === location.pathname && url.hash) return; // in-page anchor
+    e.preventDefault();
+    curtain.classList.add('is-in');
+    setTimeout(() => { location.href = url.href; }, 360);
+  });
+  addEventListener('pageshow', (e) => { if (e.persisted) curtain.classList.remove('is-in'); }); // back/forward cache
+})();

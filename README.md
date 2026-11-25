@@ -191,7 +191,7 @@ Install from source today: Chrome / Edge / Brave → `chrome://extensions` → D
 server/     MCP server (Node ≥ 18, ESM, zero build step)
 extension/  Leeway Guard browser extension (Manifest V3, Firefox · Edge · Chrome)
 store/      Store listing kit for the extension
-site/       Landing page (static HTML/CSS/JS + Three.js, deploy anywhere)
+site/       Landing, docs, The Agent Sea (immersive WebGL page) and privacy policy. Landing page (static HTML/CSS/JS + Three.js, deploy anywhere)
 PROMPT.md   Design brief used to build the landing
 ```
 

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Agent Sea | Leeway Live</title>
+  <meta name="description" content="A live view of the agent economy: every ship is an AI agent, every lighthouse is a Leeway policy check." />
+  <meta name="theme-color" content="#04050a" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="sea.css" />
+  <script type="importmap">
+    { "imports": { "three": "./assets/three.module.js" } }
+  </script>
+</head>
+<body class="sea-page">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c4"/><stop offset=".45" stop-color="#e7b94f"/><stop offset="1" stop-color="#7a4e12"/></linearGradient>
+      <symbol id="drift" viewBox="0 0 40 40"><g transform="translate(0 -1.2)"><g transform="rotate(8 20 20)"><path d="M10 4V30.5H25Z"/><path d="M14.6 8.4 28.4 30.5H33Z"/></g><path d="M5 34.2h30l-2.6 3H7.6Z"/></g></symbol>
+    </defs>
+  </svg>
+
+  <div class="sea-fallback" aria-hidden="true"></div>
+  <canvas id="sea" class="sea-canvas" aria-label="Animated night sea: gold ships are AI agents, lighthouses are Leeway policy checks"></canvas>
+  <div class="sea-vignette" aria-hidden="true"></div>
+
+  <header class="sea-top">
+    <a href="index.html" class="logo sea-logo" aria-label="Leeway home">
+      <svg class="logo__mark" viewBox="0 0 40 40" aria-hidden="true"><use href="#drift" fill="url(#lg1)"/></svg>
+      <span>LEEWAY</span>
+    </a>
+    <span class="sea-live"><i></i>Live · simulated</span>
+    <nav class="sea-nav" aria-label="Sea">
+      <a href="index.html">Landing</a>
+      <a href="docs.html">Docs</a>
+      <a href="index.html#guard" class="sea-nav__cta">Get the extension</a>
+    </nav>
+  </header>
+
+  <main class="sea-hud">
+    <section class="sea-intro sg">
+      <p class="sea-eyebrow">[ Leeway Live ]</p>
+      <h1>The Agent <span>Sea</span></h1>
+      <p class="sea-sub">Every ship is an AI agent. Every lighthouse is a Leeway check.</p>
+      <div class="sea-stats">
+        <div><b id="stAgents">0</b><span>agents at sea</span></div>
+        <div><b id="stChecks">0</b><span>checks</span></div>
+        <div><b id="stBlocked" class="is-red">0</b><span>blocked</span></div>
+      </div>
+      <div class="sea-ctas">
+        <a href="index.html" class="sea-btn sea-btn--gold">Back to landing</a>
+        <a href="docs.html" class="sea-btn">Read the docs</a>
+      </div>
+    </section>
+
+    <aside class="sea-log sg" aria-live="polite">
+      <header><b>Event log</b><span>policy decisions</span></header>
+      <ol id="seaLog"></ol>
+    </aside>
+
+    <aside class="sea-legend sg">
+      <div><svg viewBox="0 0 40 40" aria-hidden="true"><use href="#drift" fill="url(#lg1)"/></svg><span><b>Ship</b> an AI agent inside its limits</span></div>
+      <div><i class="lg-light"></i><span><b>Lighthouse</b> a Leeway check: simulate, policy, approval</span></div>
+      <div><i class="lg-dot lg-dot--ok"></i><span><b>Green flash</b> allowed, the ship sails on</span></div>
+      <div><i class="lg-dot lg-dot--bad"></i><span><b>Red flash</b> blocked, the ship turns back</span></div>
+    </aside>
+
+    <p class="sea-hint"><span>⟲</span> Drag to look around · scroll to zoom · hover a ship · click a lighthouse</p>
+  </main>
+
+  <div class="sea-tip sg" id="seaTip" role="status" aria-hidden="true">
+    <b id="tipId">agent#0000</b>
+    <span id="tipAction">x402 · 0.02 USDC</span>
+    <em id="tipState">sailing</em>
+  </div>
+  <div class="sea-focus sg" id="seaFocus" aria-hidden="true">
+    <b id="focusName">Lighthouse</b>
+    <span id="focusDesc">simulate · policy · approval</span>
+    <div class="sea-focus__row"><span>checks <b id="focusChecks">0</b></span><span>blocked <b id="focusBlocked" class="is-red">0</b></span></div>
+  </div>
+
+  <script type="module" src="js/sea.js"></script>
+  <script type="module" src="js/cursor.js"></script>
+</body>
+</html>
