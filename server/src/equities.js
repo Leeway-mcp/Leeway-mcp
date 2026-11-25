@@ -235,3 +235,68 @@ export async function parityCheck({ ticker, bandPct }) {
     ...(!status.open && { note: 'US market closed: the reference is the last regular-session price, while tokens trade 24/7, so gaps can reflect after-hours news. The band is not widened.' }),
   };
 }
+
+/* ---------------- equity guardrails (execution) ----------------
+   Rules an agent must pass before it buys a tokenized share:
+     market hours (LEEWAY_EQ_MARKET_HOURS_ONLY, default true) · Parity Guard for that exact token
+     · per-trade cap (LEEWAY_EQ_MAX_TRADE_USD, default 100 → above needs a human)
+     · per-ticker position cap incl. current holdings (LEEWAY_EQ_MAX_POSITION_USD, default 500)
+     · no leverage: only verified 1:1 tokens are on the registry */
+export const SECTORS = { TSLA: 'Consumer discretionary', AAPL: 'Technology', NVDA: 'Technology', SPY: 'Index fund' };
+
+export function findTokenized(chain, address) {
+  const a = String(address || '').toLowerCase();
+  for (const [ticker, list] of Object.entries(TOKENIZED)) {
+    for (const t of list) if (t.chains[chain] && t.chains[chain].toLowerCase() === a) return { ticker, ...t, address: t.chains[chain] };
+  }
+  return null;
+}
+
+export async function equityGuard({ ticker, token, valueUsd, chain, owner, rpc, now = new Date() }) {
+  const t = String(ticker).toUpperCase();
+  const list = TOKENIZED[t];
+  if (!list) return { ticker: t, decision: 'deny', checks: [{ check: 'registry', status: 'fail', detail: `${t} has no verified 1:1 tokenized version; leveraged or unknown tokens are never allowed` }] };
+  const entry = token ? list.find((x) => x.token.toLowerCase() === String(token).toLowerCase()) : list[0];
+  if (!entry) return { ticker: t, decision: 'deny', checks: [{ check: 'registry', status: 'fail', detail: `${token} is not a verified tokenized ${t}` }] };
+  const env = process.env;
+  const hoursOnly = (env.LEEWAY_EQ_MARKET_HOURS_ONLY ?? 'true') !== 'false';
+  const maxTrade = Number(env.LEEWAY_EQ_MAX_TRADE_USD ?? 100);
+  const maxPosition = Number(env.LEEWAY_EQ_MAX_POSITION_USD ?? 500);
+  const checks = [];
+  const add = (check, status, detail) => checks.push({ check, status, detail });
+
+  const ms = marketStatus(now);
+  if (ms.open) add('market_hours', 'pass', 'US market is open');
+  else add('market_hours', hoursOnly ? 'fail' : 'warn', `US market is ${ms.session}${hoursOnly ? '; equity buys only run in regular hours (LEEWAY_EQ_MARKET_HOURS_ONLY)' : ''}`);
+
+  let price = null;
+  try {
+    const p = await parityCheck({ ticker: t });
+    const r = p.tokens.find((x) => x.token === entry.token);
+    price = r?.price_usd ?? null;
+    if (!r || r.verdict === 'NO_REFERENCE' || r.verdict === 'NO_PRICE') add('parity', 'warn', 'could not compare with the exchange price');
+    else if (r.verdict === 'ABOVE_BAND') add('parity', 'fail', `${entry.token} trades ${r.premium_pct}% above ${t} (band ${p.band_pct}%): paying more than the real share`);
+    else if (r.verdict === 'BELOW_BAND') add('parity', 'warn', `${entry.token} trades ${r.premium_pct}% below ${t}: possible depeg or stale price`);
+    else add('parity', 'pass', `${r.premium_pct}% vs ${t}, within ±${p.band_pct}%`);
+  } catch (e) { add('parity', 'warn', `parity check failed: ${e.message}`); }
+
+  add('trade_cap', valueUsd > maxTrade ? 'warn' : 'pass', `$${valueUsd} ${valueUsd > maxTrade ? '>' : '≤'} per-trade cap $${maxTrade}${valueUsd > maxTrade ? ' → needs a human' : ''}`);
+
+  let held = 0;
+  if (owner && chain && entry.chains[chain] && rpc) {
+    try {
+      const pad = owner.toLowerCase().replace('0x', '').padStart(64, '0');
+      const [bal, dec] = await Promise.all([
+        rpc(chain, 'eth_call', [{ to: entry.chains[chain], data: '0x70a08231' + pad }, 'latest']),
+        rpc(chain, 'eth_call', [{ to: entry.chains[chain], data: '0x313ce567' }, 'latest']),
+      ]);
+      held = price ? (Number(BigInt(bal)) / 10 ** Number(BigInt(dec))) * price : 0;
+    } catch { /* no holdings data: the trade cap still applies */ }
+  }
+  const after = Math.round((held + valueUsd) * 100) / 100;
+  add('position_cap', after > maxPosition ? 'fail' : 'pass', `${t} position after trade $${after} (held $${Math.round(held * 100) / 100}) vs cap $${maxPosition}`);
+  add('leverage', 'pass', `${entry.token} is a 1:1 tokenized share (${entry.issuer}); leveraged products are not on the registry`);
+
+  const decision = checks.some((c) => c.status === 'fail') ? 'deny' : checks.some((c) => c.status === 'warn') ? 'needs_approval' : 'allow';
+  return { ticker: t, token: entry.token, sector: SECTORS[t] ?? 'Unknown', value_usd: valueUsd, decision, checks };
+}

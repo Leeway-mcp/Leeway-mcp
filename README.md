@@ -41,13 +41,14 @@ Leeway puts a **policy engine** between the agent and the money. The model never
 | `x402_quote` | Reads the price of an HTTP 402 (x402) paywalled resource and runs the policy check |
 | `spending_report` | Today's spend, remaining budget, active limits |
 
-**Equity Rails (3, new in v0.4, read-only)**
+**Equity Rails (4, read-only)**
 
 | Tool | What it does |
 |---|---|
 | `get_equity_quote` | US stock reference price (Yahoo, Nasdaq fallback) plus on-chain prices of verified tokenized versions (xStocks, Ondo Global Markets) |
 | `parity_check` | **Parity Guard**: premium or discount of each tokenized share vs the real stock; `ABOVE_BAND` blocks buys (default band 0.5%, `LEEWAY_EQ_PARITY_BAND_PCT`) |
 | `market_hours` | NYSE open / closed now, next open and close, holidays and early closes, DST-correct |
+| `equity_policy_check` | Equity guardrails for a buy: market hours, Parity Guard for the exact token, per-trade cap (approval above) and per-ticker position cap incl. holdings (deny above). `execute_swap` applies them automatically |
 
 **Execution and approvals (6, new in v0.3)**
 
@@ -112,6 +113,9 @@ After `npm publish`, this becomes `npx -y leeway-mcp`.
 | `LEEWAY_AGENT_KEY` / `LEEWAY_AGENT_KEY_FILE` | `~/.leeway-mcp/agent-key.json` | Agent hot-wallet key, or where it is stored |
 | `LEEWAY_APPROVALS` / `LEEWAY_APPROVAL_TTL_MIN` | `~/.leeway-mcp/approvals.json` / `15` | Approval store and lifetime |
 | `LEEWAY_TELEGRAM_BOT_TOKEN` / `LEEWAY_TELEGRAM_CHAT_ID` | (empty) | Telegram approvals |
+| `LEEWAY_ACCOUNT` | `eoa` | `smart`: act from an ERC-4337 Coinbase Smart Wallet owned by the agent key |
+| `LEEWAY_BUNDLER_URL` / `LEEWAY_PAYMASTER_URL` | Pimlico public / (empty) | Bundler and paymaster for smart mode (`{chainId}` placeholder). Public bundler is rate-limited |
+| `LEEWAY_EQ_MAX_TRADE_USD` / `LEEWAY_EQ_MAX_POSITION_USD` / `LEEWAY_EQ_MARKET_HOURS_ONLY` | `100` / `500` / `true` | Equity guardrails |
 | `LEEWAY_APPROVAL_WEBHOOK` / `LEEWAY_APPROVAL_WEBHOOK_SECRET` | (empty) | POST approval requests to any URL, signed with `X-Leeway-Signature: sha256=<hmac>` |
 | `LEEWAY_HTTP_TOKEN` / `LEEWAY_ADMIN_TOKEN` / `LEEWAY_HTTP_HOST` | (empty) / (empty) / `127.0.0.1` | HTTP mode: agent token, owner token, bind address |
 
@@ -177,7 +181,9 @@ Install from source today: Chrome / Edge / Brave → `chrome://extensions` → D
 - [x] Leeway Guard browser extension v0.1.1 (transactions, Permit / Permit2, personal_sign, SIWE)
 - [ ] Independent security audit #1
 - [x] **Equity Rails, read-only**: tokenized stock quotes (TSLA, AAPL, NVDA, SPY via xStocks and Ondo), Parity Guard, NYSE market hours
-- [ ] Equity guardrails for execution: per-ticker and sector caps, market-hours-only trading, no leverage
+- [x] Equity guardrails enforced in `execute_swap`: market hours, Parity Guard, trade and position caps, no leverage
+- [x] ERC-4337 smart accounts (`LEEWAY_ACCOUNT=smart`): Coinbase Smart Wallet, atomic approve + swap, optional paymaster
+- [ ] Scoped session keys enforced on-chain · sector caps · corporate actions
 - [ ] Solana support
 - [ ] Hosted gateway
 

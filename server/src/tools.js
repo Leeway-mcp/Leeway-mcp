@@ -4,11 +4,11 @@ import { z } from 'zod';
 import * as data from './data.js';
 import { evaluate, report, policy } from './policy.js';
 import { scoreToken, simulateTx, swapQuote, parseUnits } from './onchain.js';
-import { loadAccount, execution } from './wallet.js';
+import { loadAccount, execution, accountMode, agentAddress } from './wallet.js';
 import { executeTx, executeSwap, payX402 } from './execute.js';
 import { getApproval, listApprovals } from './approvals.js';
 import { telegramEnabled } from './telegram.js';
-import { equityQuote, parityCheck, marketStatus, TICKER_RE } from './equities.js';
+import { equityQuote, parityCheck, marketStatus, TICKER_RE, equityGuard } from './equities.js';
 
 export const ctx = { CHAINS: data.CHAINS, rpc: data.rpc, getJSON: data.getJSON, tokenSecurity: data.tokenSecurity, addressSecurity: data.addressSecurity, evaluate };
 
@@ -24,7 +24,7 @@ const READ = { readOnlyHint: true, openWorldHint: true };
 const ALIASES = { btc: 'bitcoin', eth: 'ethereum', sol: 'solana', bnb: 'binancecoin', usdc: 'usd-coin', usdt: 'tether', tao: 'bittensor', fet: 'fetch-ai', render: 'render-token', near: 'near', virtual: 'virtual-protocol', avax: 'avalanche-2', pol: 'polygon-ecosystem-token', arb: 'arbitrum', op: 'optimism', link: 'chainlink', doge: 'dogecoin' };
 
 export function createServer() {
-  const server = new McpServer({ name: 'leeway-mcp', version: '0.4.0' });
+  const server = new McpServer({ name: 'leeway-mcp', version: '0.5.0' });
   /* ---------------- market ---------------- */
   server.registerTool('get_price', {
     title: 'Get token prices',
@@ -229,6 +229,18 @@ function registerEquityTools(server) {
     inputSchema: { market: z.enum(['XNYS', 'XNAS']).default('XNYS').describe('XNYS (NYSE) or XNAS (Nasdaq): same calendar') },
     annotations: { readOnlyHint: true },
   }, safe(({ market }) => ({ ...marketStatus(), market })));
+
+  server.registerTool('equity_policy_check', {
+    title: 'Equity guardrails check',
+    description: 'Would buying this tokenized share pass the equity guardrails? Checks market hours, Parity Guard for the exact token, the per-trade cap (LEEWAY_EQ_MAX_TRADE_USD) and the per-ticker position cap including current holdings (LEEWAY_EQ_MAX_POSITION_USD). Returns allow, needs_approval or deny with every check. execute_swap applies the same rules automatically.',
+    inputSchema: {
+      ticker: z.string().regex(TICKER_RE, 'must be a stock ticker like TSLA').describe('US stock ticker, e.g. TSLA'),
+      value_usd: z.number().positive().max(1e6).describe('Size of the intended buy in USD'),
+      token: z.string().optional().describe('Tokenized version, e.g. TSLAx or TSLAon (default: the first verified one)'),
+      chain: z.enum(data.CHAIN_NAMES).optional().describe('Chain to read current holdings on'),
+    },
+    annotations: READ,
+  }, safe(async ({ ticker, value_usd, token, chain }) => equityGuard({ ticker, token, valueUsd: value_usd, chain, owner: chain && loadAccount() ? await agentAddress(chain).catch(() => null) : null, rpc: data.rpc })));
 }
 
 function registerExecutionTools(server) {
@@ -241,10 +253,14 @@ function registerExecutionTools(server) {
     const a = loadAccount();
     if (!a) return { configured: false, next: 'Owner: run `npx leeway-mcp init-wallet`, then fund the printed address with a small amount (start on Base Sepolia).' };
     const balances = await Promise.all(execution.chains.map(async (c) => {
-      try { return { chain: c, testnet: Boolean(data.CHAINS[c].testnet), balance: data.formatUnits(BigInt(await data.rpc(c, 'eth_getBalance', [a.address, 'latest']))), symbol: data.CHAINS[c].symbol }; }
+      try {
+        const addr = await agentAddress(c);
+        const [bal, code] = await Promise.all([data.rpc(c, 'eth_getBalance', [addr, 'latest']), accountMode === 'smart' ? data.rpc(c, 'eth_getCode', [addr, 'latest']) : null]);
+        return { chain: c, address: addr, testnet: Boolean(data.CHAINS[c].testnet), balance: data.formatUnits(BigInt(bal)), symbol: data.CHAINS[c].symbol, ...(accountMode === 'smart' && { smart_account_deployed: Boolean(code && code !== '0x') }) };
+      }
       catch (e) { return { chain: c, error: e.message }; }
     }));
-    return { configured: true, address: a.address, key_source: a.keySource, execution_enabled: execution.enabled, execution_chains: execution.chains, balances, approvals: telegramEnabled ? 'telegram + cli' : 'cli / admin endpoint (set LEEWAY_TELEGRAM_BOT_TOKEN and LEEWAY_TELEGRAM_CHAT_ID for Telegram)' };
+    return { configured: true, account_mode: accountMode, owner_address: a.address, address: accountMode === 'smart' ? balances[0]?.address ?? null : a.address, ...(accountMode === 'smart' && { smart_account: 'Coinbase Smart Wallet (ERC-4337, EntryPoint v0.6), owned by the agent key; deployed on the first user operation', x402_payer: a.address }), key_source: a.keySource, execution_enabled: execution.enabled, execution_chains: execution.chains, balances, approvals: telegramEnabled ? 'telegram + cli' : 'cli / admin endpoint (set LEEWAY_TELEGRAM_BOT_TOKEN and LEEWAY_TELEGRAM_CHAT_ID for Telegram)' };
   }));
 
   server.registerTool('send_transaction', {

@@ -2,7 +2,8 @@
 //   1. simulate on live state   2. policy decision   3. human approval when asked
 //   4. sign + broadcast         5. record the spend in the ledger
 import { simulateTx, swapQuote, NATIVE } from './onchain.js';
-import { assertCanExecute, sendTransaction, publicClient } from './wallet.js';
+import { assertCanExecute, publicClient, agentAddress, sendCalls, accountMode } from './wallet.js';
+import { findTokenized, equityGuard } from './equities.js';
 import { createApproval, consume } from './approvals.js';
 import { telegramEnabled } from './telegram.js';
 import { notifyApproval, webhookEnabled } from './notify.js';
@@ -32,52 +33,65 @@ async function gate({ kind, params, summary, valueUsd, policy, verdict, approval
   return { ok: false, out: { status: 'pending_approval', approval_id: a.id, expires_at: a.expires_at, reasons, notified_via: notified, next: `Ask the owner to approve (${howToApprove(a.id)}), then call this tool again with the same arguments and approval_id: "${a.id}". Do not retry without it.` } };
 }
 
-/** send_transaction: any call or transfer from the agent wallet. */
+/** send_transaction: any call or transfer from the agent (EOA or smart account). */
 export async function executeTx(ctx, { chain, to, data = '0x', valueWei = 0n, approvalId }) {
-  const account = assertCanExecute(chain);
+  assertCanExecute(chain);
+  const from = await agentAddress(chain);
   const params = { kind: 'tx', chain, to: lc(to), data: lc(data || '0x'), value: valueWei.toString() };
-  const sim = await simulateTx(ctx, { chain, from: account.address, to, data, valueWei });
+  const sim = await simulateTx(ctx, { chain, from, to, data, valueWei });
   if (['WILL_REVERT', 'DO_NOT_SIGN'].includes(sim.verdict)) return { status: 'blocked', reason: sim.verdict, simulation: sim };
   const summary = `${sim.method} → ${to} on ${chain}` + (sim.value_out_usd ? `, sends $${sim.value_out_usd}` : '');
   const g = await gate({ kind: 'tx', params, summary, valueUsd: sim.value_out_usd, policy: sim.policy, verdict: sim.verdict, approvalId });
   if (!g.ok) return { ...g.out, simulation: sim };
-  const sent = await sendTransaction(chain, { to, data, valueWei });
-  if (sim.value_out_usd) record({ valueUsd: sim.value_out_usd, memo: `tx ${sent.hash} on ${chain}` });
-  return { status: 'sent', ...sent, from: account.address, asset_changes: sim.asset_changes, value_usd: sim.value_out_usd, approved_by: g.approvedBy ?? 'policy' };
+  const [sent] = await sendCalls(chain, [{ to, data, valueWei }]);
+  if (sim.value_out_usd) record({ valueUsd: sim.value_out_usd, memo: `tx ${sent.hash || sent.user_op_hash} on ${chain}` });
+  return { status: 'sent', ...sent, from, account_mode: accountMode, asset_changes: sim.asset_changes, value_usd: sim.value_out_usd, approved_by: g.approvedBy ?? 'policy' };
 }
 
 /**
- * execute_swap: quote → build → simulate → policy → approval → send.
- * ERC-20 sells whose router allowance is short become a two-step plan: approve the EXACT amount,
- * then swap. Both steps are simulated together before anything is signed, and one human approval
- * covers both. If the swap fails after the approve was mined, the exact allowance stays in place;
- * it only covers this amount and is used by the next identical swap.
+ * execute_swap: quote → build → simulate → policy (+ equity guardrails for tokenized stocks) → approval → send.
+ * ERC-20 sells whose router allowance is short become a two-step plan: approve the EXACT amount, then swap.
+ * Both steps are simulated together before anything is signed, and one human approval covers both.
+ * Smart account mode sends both as ONE atomic user operation. EOA mode sends them in order; if the swap
+ * fails after the approve was mined, the exact allowance stays (it only covers this amount).
  */
 export async function executeSwap(ctx, { chain, sell, buy, amount, slippageBps = 50, approvalId }) {
-  const account = assertCanExecute(chain);
+  assertCanExecute(chain);
+  const sender = await agentAddress(chain);
   const params = { kind: 'swap', chain, sell: lc(sell), buy: lc(buy), amount: String(amount), slippageBps };
-  const q = await swapQuote(ctx, { chain, sell, buy, amount, slippageBps, sender: account.address });
+  const q = await swapQuote(ctx, { chain, sell, buy, amount, slippageBps, sender });
   if (q.verdict === 'DO_NOT_SWAP' || q.simulation?.status !== 'success') {
     const sim = q.simulation;
     const reason = sim?.status === 'reverted' ? `simulation reverts: ${sim.revert_reason}${sim.hint ? ` (${sim.hint})` : ''}` : sim?.note || q.verdict;
     return { status: 'blocked', reason, plan: q.plan, quote: q };
   }
+  // buying a tokenized share: equity guardrails on top of the normal policy
+  let policy = q.policy, equity = null;
+  const stock = q.buy.token !== 'native' ? findTokenized(chain, q.buy.token) : null;
+  if (stock) {
+    equity = await equityGuard({ ticker: stock.ticker, token: stock.token, valueUsd: q.value_in_usd ?? 0, chain, owner: sender, rpc: ctx.rpc });
+    if (equity.decision === 'deny') return { status: 'blocked', reason: 'equity guardrails', equity, quote: q };
+    if (equity.decision === 'needs_approval' && policy.decision === 'allow') {
+      policy = { ...policy, decision: 'needs_approval', reasons: [...policy.reasons, ...equity.checks.filter((c) => c.status === 'warn').map((c) => c.detail)] };
+    }
+  }
   const steps = q.plan?.length > 1 ? `approve exactly ${q.plan[0].amount} ${q.plan[0].symbol}, then swap` : 'swap';
-  const g = await gate({ kind: 'swap', params, summary: `Swap ${amount} ${q.sell.symbol} → ≥${q.buy.min_out} ${q.buy.symbol} on ${chain} via ${q.route.aggregator} (${steps})`, valueUsd: q.value_in_usd, policy: q.policy, verdict: q.verdict === 'REVIEW' ? 'REVIEW' : 'OK', approvalId });
-  if (!g.ok) return { ...g.out, plan: q.plan, quote: q };
+  const g = await gate({ kind: 'swap', params, summary: `Swap ${amount} ${q.sell.symbol} → ≥${q.buy.min_out} ${q.buy.symbol} on ${chain} via ${q.route.aggregator} (${steps}${accountMode === 'smart' ? ', atomic' : ''})`, valueUsd: q.value_in_usd, policy, verdict: q.verdict === 'REVIEW' ? 'REVIEW' : 'OK', approvalId });
+  if (!g.ok) return { ...g.out, plan: q.plan, ...(equity && { equity }), quote: q };
   // rebuild right before sending so the route is fresh; min_out still protects the trade
-  const fresh = await swapQuote(ctx, { chain, sell, buy, amount, slippageBps, sender: account.address, includeTx: true });
+  const fresh = await swapQuote(ctx, { chain, sell, buy, amount, slippageBps, sender, includeTx: true });
   const tx = fresh.simulation?.status === 'success' ? fresh.tx : null;
   if (!tx) return { status: 'blocked', reason: 'could not rebuild a route that simulates cleanly', plan: fresh.plan, quote: fresh };
-  let approveSent = null;
-  if (fresh.approve_tx) {
-    approveSent = await sendTransaction(chain, { to: fresh.approve_tx.to, data: fresh.approve_tx.data, valueWei: 0n });
-    if (approveSent.onchain_status !== 'confirmed') return { status: 'failed', step: 'approve', approve: approveSent, note: 'the exact approve did not confirm; the swap was not sent' };
-  }
-  const sent = await sendTransaction(chain, { to: tx.to, data: tx.data, valueWei: BigInt(tx.value) });
-  if (sent.onchain_status === 'reverted') return { status: 'failed', step: 'swap', swap: sent, ...(approveSent && { approve: approveSent, note: 'the swap reverted after the exact approve was mined; that allowance only covers this amount' }) };
-  record({ valueUsd: q.value_in_usd ?? 0, memo: `swap ${sent.hash} on ${chain}` });
-  return { status: 'sent', ...sent, ...(approveSent && { approve: approveSent }), plan: fresh.plan, sold: q.sell, bought_min: q.buy.min_out, symbol: q.buy.symbol, approved_by: g.approvedBy ?? 'policy' };
+  const calls = [
+    ...(fresh.approve_tx ? [{ to: fresh.approve_tx.to, data: fresh.approve_tx.data, valueWei: 0n }] : []),
+    { to: tx.to, data: tx.data, valueWei: BigInt(tx.value) },
+  ];
+  const results = await sendCalls(chain, calls);
+  const last = results.at(-1);
+  if (accountMode === 'eoa' && calls.length > 1 && results.length === 1) return { status: 'failed', step: 'approve', approve: results[0], note: 'the exact approve did not confirm; the swap was not sent' };
+  if (last.onchain_status === 'reverted') return { status: 'failed', step: 'swap', result: last, ...(accountMode === 'eoa' && calls.length > 1 && { note: 'the swap reverted after the exact approve was mined; that allowance only covers this amount' }), ...(accountMode === 'smart' && { note: 'the user operation reverted as a whole: nothing changed' }) };
+  record({ valueUsd: q.value_in_usd ?? 0, memo: `swap ${last.hash || last.user_op_hash} on ${chain}` });
+  return { status: 'sent', ...last, ...(results.length > 1 && { approve: results[0] }), account_mode: accountMode, plan: fresh.plan, sold: q.sell, bought_min: q.buy.min_out, symbol: q.buy.symbol, ...(equity && { equity }), approved_by: g.approvedBy ?? 'policy' };
 }
 
 /* ---------------- x402 ---------------- */

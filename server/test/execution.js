@@ -82,7 +82,7 @@ const call = async (name, args) => {
 };
 
 const { tools } = await client.listTools();
-check('20 tools registered', tools.length === 20, tools.map((t) => t.name).slice(11).join(', '));
+check('21 tools registered', tools.length === 21, tools.map((t) => t.name).slice(11).join(', '));
 
 const w = await call('wallet_info', {});
 check('wallet_info shows the agent address, never the key', w.address === agent && !JSON.stringify(w).includes(key.slice(2, 20)), `${w.address} · executes on ${w.execution_chains}`);
@@ -153,7 +153,7 @@ const hc = new Client({ name: 'leeway-http-test', version: '0.0.1' });
 await hc.connect(new StreamableHTTPClientTransport(new URL(`${url}/mcp`), { requestInit: { headers: { Authorization: `Bearer ${agentToken}` } } }));
 const ht = await hc.listTools();
 const hw = await hc.callTool({ name: 'wallet_info', arguments: {} });
-check('HTTP: remote agent lists tools and calls them', ht.tools.length === 20 && JSON.parse(hw.content[0].text).address === agent);
+check('HTTP: remote agent lists tools and calls them', ht.tools.length === 21 && JSON.parse(hw.content[0].text).address === agent);
 await hc.close();
 const agentAsAdmin = await fetch(`${url}/approvals`, { headers: { Authorization: `Bearer ${agentToken}` } });
 check('HTTP: the agent token cannot reach the approval endpoint', agentAsAdmin.status === 401);

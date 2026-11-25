@@ -6,12 +6,12 @@
     "url": "https://github.com/YOUR_GITHUB/leeway-mcp",
     "source": "github"
   },
-  "version": "0.4.0",
+  "version": "0.5.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "leeway-mcp",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "transport": {
         "type": "stdio"
       },
@@ -92,6 +92,20 @@
           "isRequired": false,
           "format": "number",
           "isSecret": false
+        },
+        {
+          "name": "LEEWAY_ACCOUNT",
+          "description": "eoa (default) or smart: ERC-4337 Coinbase Smart Wallet owned by the agent key",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "LEEWAY_BUNDLER_URL",
+          "description": "ERC-4337 bundler RPC, {chainId} placeholder allowed (default Pimlico public)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
         }
       ]
     }

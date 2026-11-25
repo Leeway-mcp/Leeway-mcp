@@ -565,6 +565,9 @@ node test/execution.js</code></pre></div>
           <tr><td><code>LEEWAY_PER_TX_LIMIT_USD</code></td><td>25</td><td>Above this, a human must approve</td></tr>
           <tr><td><code>LEEWAY_HARD_CAP_USD</code></td><td>500</td><td>Above this, always denied, even with approval</td></tr>
           <tr><td><code>LEEWAY_EQ_PARITY_BAND_PCT</code></td><td>0.5</td><td>Parity Guard: max premium (%) a tokenized stock may trade above the real share</td></tr>
+          <tr><td><code>LEEWAY_EQ_MAX_TRADE_USD</code> / <code>LEEWAY_EQ_MAX_POSITION_USD</code> / <code>LEEWAY_EQ_MARKET_HOURS_ONLY</code></td><td>100 / 500 / true</td><td>Equity guardrails: per-trade cap (above → approval), per-ticker position cap (above → deny), regular hours only</td></tr>
+          <tr><td><code>LEEWAY_ACCOUNT</code></td><td>eoa</td><td><code>smart</code>: the agent acts from an ERC-4337 Coinbase Smart Wallet owned by its key (atomic multi-call, sponsored gas)</td></tr>
+          <tr><td><code>LEEWAY_BUNDLER_URL</code> / <code>LEEWAY_PAYMASTER_URL</code></td><td>Pimlico public / (empty)</td><td>Bundler and paymaster RPC for smart mode; <code>{chainId}</code> is replaced. The public bundler is rate-limited: use your own key in production</td></tr>
           <tr><td><code>LEEWAY_MICRO_ALLOWANCE_USD</code></td><td>1</td><td>Micro-payments at or below this pass automatically (within the daily limit)</td></tr>
           <tr><td><code>LEEWAY_ALLOWLIST</code></td><td>(empty)</td><td>Comma-separated merchants. If set, anyone else above the micro allowance is denied</td></tr>
           <tr><td><code>LEEWAY_DENYLIST</code></td><td>(empty)</td><td>Always denied</td></tr>
@@ -861,11 +864,12 @@ TSLAon  <span class="k">"premium_pct"</span>: -0.28    <span class="k">"verdict"
         <p><a href="#t-market_hours"><code>market_hours</code></a> knows the NYSE calendar (holidays, observed days, 13:00 ET early closes) and daylight saving time, so an agent can tell a live reference price from last night's close.</p>
         <h3>Equity guardrails</h3>
         <table class="params"><thead><tr><th>Rule</th><th>Example</th><th>Why</th></tr></thead><tbody>
-          <tr><td><code>LEEWAY_EQ_MAX_POSITION_PCT</code></td><td>10</td><td>No single ticker above 10% of the portfolio (planned)</td></tr>
+          <tr><td><code>LEEWAY_EQ_MARKET_HOURS_ONLY</code></td><td>true</td><td>Equity buys only during the regular NYSE session (live)</td></tr>
+          <tr><td><code>LEEWAY_EQ_PARITY_BAND_PCT</code></td><td>0.5</td><td>Parity Guard for the exact token: above the band, buys are denied (live)</td></tr>
+          <tr><td><code>LEEWAY_EQ_MAX_TRADE_USD</code></td><td>100</td><td>Per-trade cap: bigger buys need a human (live)</td></tr>
+          <tr><td><code>LEEWAY_EQ_MAX_POSITION_USD</code></td><td>500</td><td>Per-ticker position cap including current holdings: above it, denied (live)</td></tr>
+          <tr><td>(no setting)</td><td>always</td><td>No leverage: only verified 1:1 tokenized shares are on the registry (live)</td></tr>
           <tr><td><code>LEEWAY_EQ_SECTOR_CAP_PCT</code></td><td>30</td><td>Caps exposure to any one sector (planned)</td></tr>
-          <tr><td><code>LEEWAY_EQ_PARITY_BAND_PCT</code></td><td>0.5</td><td>Max premium over the reference price (live: used by <code>parity_check</code>)</td></tr>
-          <tr><td><code>LEEWAY_EQ_MARKET_HOURS_ONLY</code></td><td>true</td><td>Trade only while the underlying market is open (planned)</td></tr>
-          <tr><td><code>LEEWAY_EQ_LEVERAGE</code></td><td>false</td><td>No margin, no leveraged tokens (planned)</td></tr>
         </tbody></table>
         <h3>Tools</h3>
         <p>Live in 0.4: <a href="#t-get_equity_quote"><code>get_equity_quote</code></a> · <a href="#t-parity_check"><code>parity_check</code></a> · <a href="#t-market_hours"><code>market_hours</code></a>. Next: <code>corporate_actions</code> (dividends, splits, earnings), <code>equity_policy</code> (the guardrails above) and <code>execute_equity</code>, which buys only when parity and policy both pass, after an audit.</p>
@@ -888,8 +892,8 @@ TSLAon  <span class="k">"premium_pct"</span>: -0.28    <span class="k">"verdict"
         <ul class="road">
           <li class="done"><em>Phase 1 · Q3 2026</em><b>Genesis</b>Market and wallet tools on 7 EVM chains, stdio transport, MIT license.</li>
           <li class="done"><em>Phase 2 · Q4 2026</em><b>Guardrails</b>Policy engine + ledger ✓, risk scanner ✓, x402 quotes ✓, docs &amp; live playground ✓, guarded swap quotes ✓, pre-sign transaction simulation ✓. Still to do: npm publish and MCP registries, once the GitHub account is set up.</li>
-          <li class="now"><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>Agent wallet ✓, policy-gated execution ✓, x402 settlement in USDC ✓, Telegram / CLI / HTTP approvals ✓, HTTP transport ✓, <a href="#guard">Leeway Guard</a> browser extension v0.1 (Firefox and Edge stores first, then Chrome). ERC-20 sells with exact allowances ✓, email approvals via signed webhook ✓. Next: ERC-4337 smart accounts with scoped session keys, security audit #1.</li>
-          <li><em>Phase 4 · Q1–Q2 2027</em><b>Equity Rails</b>Tokenized stock quotes &amp; Parity Guard (read-only) ✓, market hours ✓. Next: corporate-action awareness, equity guardrails, read-only brokerage sync, then execution. See <a href="#equities">Equity Rails</a>.</li>
+          <li class="now"><em>Phase 3 · Q1 2027</em><b>Wallets &amp; payments</b>Agent wallet ✓, policy-gated execution ✓, x402 settlement in USDC ✓, Telegram / CLI / HTTP approvals ✓, HTTP transport ✓, <a href="#guard">Leeway Guard</a> browser extension v0.1 (Firefox and Edge stores first, then Chrome). ERC-20 sells with exact allowances ✓, email approvals via signed webhook ✓. ERC-4337 smart accounts ✓ (<code>LEEWAY_ACCOUNT=smart</code>: Coinbase Smart Wallet, atomic batches, optional paymaster). Next: scoped session keys enforced on-chain, security audit #1.</li>
+          <li><em>Phase 4 · Q1–Q2 2027</em><b>Equity Rails</b>Tokenized stock quotes &amp; Parity Guard ✓, market hours ✓, equity guardrails ✓ (<code>equity_policy_check</code>, enforced in <code>execute_swap</code>). Next: corporate-action awareness, sector caps, read-only brokerage sync. See <a href="#equities">Equity Rails</a>.</li>
           <li><em>Phase 5 · Q2 2027</em><b>Token generation</b>Audit #2, LWAY TGE on Base (fair launch), DEX liquidity on Uniswap v4 &amp; Aerodrome with LP locked 12 months, CoinGecko / CoinMarketCap applications, sLWAY staking.</li>
           <li><em>Phase 6 · Q3 2027</em><b>Gateway network</b>Hosted gateway and node operators, x402 fee share, Solana support, tier-2 exchange listings.</li>
           <li><em>Phase 7 · Q4 2027 →</em><b>Agent economy</b>Agent-to-agent marketplace, tier-1 exchange listings, multi-language SDKs, on-chain governance.</li>

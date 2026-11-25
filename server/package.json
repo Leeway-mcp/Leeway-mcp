@@ -1,6 +1,6 @@
 {
   "name": "leeway-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "mcpName": "io.github.YOUR_GITHUB/leeway-mcp",
   "description": "Open-source MCP server that gives AI agents a policy-guarded wallet: risk scans, guarded swaps, pre-sign simulation, x402 payments and human approvals via Telegram.",
   "type": "module",
@@ -15,11 +15,12 @@
   ],
   "scripts": {
     "start": "node src/index.js",
-    "test": "node scripts/sync-site.mjs --check && node ../extension/scripts/sync-core.mjs --check && node test/smoke.js && node test/equities.js && node test/execution.js",
+    "test": "node scripts/sync-site.mjs --check && node ../extension/scripts/sync-core.mjs --check && node test/smoke.js && node test/equities.js && node test/execution.js && node test/smart.js",
     "sync-site": "node scripts/sync-site.mjs",
     "inspect": "npx @modelcontextprotocol/inspector node src/index.js",
     "test:exec": "node test/execution.js",
-    "test:equities": "node test/equities.js"
+    "test:equities": "node test/equities.js",
+    "test:smart": "node test/smart.js"
   },
   "keywords": [
     "mcp",
