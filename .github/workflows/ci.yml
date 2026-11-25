@@ -23,8 +23,13 @@ jobs:
         run: npm ci
       - name: Syntax check (server, extension, site scripts)
         run: |
-          for f in server/src/*.js server/scripts/*.mjs server/test/*.js extension/*.js extension/lib/*.js extension/scripts/*.mjs site/js/*.js; do
+          # server/ has "type": "module"; extension/ and site/ are ES modules without a package.json,
+          # so check them as .mjs (Node 18 has no module auto-detection)
+          for f in server/src/*.js server/scripts/*.mjs server/test/*.js extension/scripts/*.mjs; do
             node --check "$f" || exit 1
+          done
+          for f in extension/*.js extension/lib/*.js site/js/*.js; do
+            cp "$f" /tmp/check.mjs && node --check /tmp/check.mjs || { echo "syntax error in $f"; exit 1; }
           done
       - name: Shared core is in sync (site playground + extension)
         run: |
