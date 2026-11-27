@@ -508,21 +508,21 @@ $$('.post-art').forEach((cv) => {
   }).observe(card);
 })();
 
-/* ---------- the voyage: pinned scroll story ---------- */
+/* ---------- the voyage: pinned scroll story + a living chart ---------- */
 (() => {
   const sec = $('#voyage');
   if (!sec) return;
-  const track = $('#vyTrack'), route = $('#vyRoute'), done = $('#vyRouteDone'), ship = $('#vyShip');
+  const track = $('#vyTrack'), svg = $('#vyChart'), route = $('#vyRoute'), done = $('#vyRouteDone'), ship = $('#vyShip');
   const wpWrap = $('#vyWps'), cards = $$('.vy-card', sec), steps = $$('.vy-progress span', sec), bar = $('#vyBar'), coords = $('#vyCoords');
   const L = route.getTotalLength();
   const WP = [0.12, 0.38, 0.63, 0.88];
   const NAMES = ['Read the sea', 'Simulate', 'Ask the captain', 'Sign & sail'];
   const NS = 'http://www.w3.org/2000/svg';
-  const el = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+  const el = (tag, attrs = {}, kids = []) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); kids.forEach((c) => n.append(c)); return n; };
   const wps = WP.map((f, i) => {
     const p = route.getPointAtLength(f * L);
     const g = el('g', { class: 'vy-wp', transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})` });
-    g.append(el('circle', { r: 16, class: 'vy-wp__halo' }), el('circle', { r: 10, class: 'vy-wp__dot' }));
+    g.append(el('circle', { r: 10, class: 'vy-wp__ping', style: `animation-delay:${(i * 0.9).toFixed(1)}s` }), el('circle', { r: 16, class: 'vy-wp__halo' }), el('circle', { r: 10, class: 'vy-wp__dot' }));
     const num = el('text', { class: 'vy-wp__num', 'text-anchor': 'middle', y: 3.6 }); num.textContent = String(i + 1).padStart(2, '0');
     const lbl = el('text', { class: 'vy-wp__lbl', 'text-anchor': 'middle', y: i % 2 ? 32 : -22 }); lbl.textContent = NAMES[i];
     g.append(num, lbl);
@@ -531,18 +531,120 @@ $$('.post-art').forEach((cv) => {
   });
   done.style.strokeDasharray = `${L} ${L}`;
 
-  const isStatic = () => reduced || matchMedia('(max-width: 900px), (max-height: 620px)').matches;
-  let staticMode = null, active = -1, shown = -1, visible = false, raf = 0;
+  /* ---- ambient layer: built once, all decorative (aria-hidden, no pointer events) ---- */
+  const defs = svg.querySelector('defs');
+  defs.append(
+    el('pattern', { id: 'vySwellP', width: 120, height: 34, patternUnits: 'userSpaceOnUse' }, [
+      el('path', { d: 'M4 10q10 -6 20 0t20 0', class: 'vy-swell__l' }),
+      el('path', { d: 'M64 27q8 -5 16 0t16 0', class: 'vy-swell__l vy-swell__l--b' }),
+    ]),
+    el('radialGradient', { id: 'vyFogG' }, [el('stop', { offset: '0', 'stop-color': 'rgba(160,175,255,0.10)' }), el('stop', { offset: '1', 'stop-color': 'rgba(160,175,255,0)' })]),
+    el('radialGradient', { id: 'vySweepG', cx: 0, cy: 0, r: 980, gradientUnits: 'userSpaceOnUse' }, [el('stop', { offset: '0', 'stop-color': 'rgba(255,226,150,0.11)' }), el('stop', { offset: '1', 'stop-color': 'rgba(255,226,150,0)' })]),
+    el('linearGradient', { id: 'vyBeamG', x1: 0, y1: 0, x2: 1, y2: 0 }, [el('stop', { offset: '0', 'stop-color': '#f5c862', 'stop-opacity': '0.55' }), el('stop', { offset: '0.6', 'stop-color': '#e7b94f', 'stop-opacity': '0.16' }), el('stop', { offset: '1', 'stop-color': '#e7b94f', 'stop-opacity': '0' })]),
+  );
+  const vignette = svg.querySelector('rect');
+  const amb = el('g', { class: 'vy-amb', 'aria-hidden': 'true' });
+  // swell hatching drifting with the current, and two slow fog banks
+  amb.append(el('g', { class: 'vy-swell' }, [el('rect', { x: -240, y: 40, width: 1480, height: 560, fill: 'url(#vySwellP)' })]));
+  amb.append(el('ellipse', { cx: 300, cy: 430, rx: 340, ry: 120, fill: 'url(#vyFogG)', class: 'vy-fog vy-fog--a' }));
+  amb.append(el('ellipse', { cx: 720, cy: 200, rx: 300, ry: 110, fill: 'url(#vyFogG)', class: 'vy-fog vy-fog--b' }));
+  // sparkles on the water (seeded so the layout is stable)
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 26; i++) {
+    const x = 40 + rnd() * 920, y = 60 + rnd() * 520;
+    amb.append(el('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: (0.7 + rnd() * 1.1).toFixed(2), class: 'vy-spark', style: `animation-delay:${(rnd() * 6).toFixed(2)}s;animation-duration:${(3.5 + rnd() * 4).toFixed(2)}s` }));
+  }
+  vignette.after(amb);
 
-  const place = (p) => {
+  // hazards: warning beacons, the compass sweep, one lighthouse
+  const HAZ = [
+    { name: 'honeypot', c: [235, 215], beacon: [150, 160], tone: 'red', chip: '✕ honeypot avoided', at: [235, 96] },
+    { name: 'drainer', c: [600, 478], beacon: [700, 512], tone: 'red', chip: '✕ drainer blocked', at: [600, 404] },
+    { name: 'slippage', c: [855, 360], beacon: [948, 300], tone: 'amber', chip: '! slippage 4.1% → review', at: [842, 268] },
+  ];
+  const isles = $$('.vy-isl', svg);
+  const firstPlace = svg.querySelector('.vy-rose');
+  const haz = el('g', { class: 'vy-haz', 'aria-hidden': 'true' });
+  HAZ.forEach((h) => {
+    const [x, y] = h.beacon;
+    haz.append(el('g', { class: `vy-beacon vy-beacon--${h.tone}` }, [
+      el('line', { x1: x, y1: y + 9, x2: x, y2: y, class: 'vy-beacon__post' }),
+      el('circle', { cx: x, cy: y + 10, r: 3, class: 'vy-beacon__base' }),
+      el('circle', { cx: x, cy: y - 1, r: 7, class: 'vy-beacon__glow' }),
+      el('circle', { cx: x, cy: y - 1, r: 2.4, class: 'vy-beacon__light' }),
+    ]));
+  });
+  const LH = [392, 548]; // lighthouse lamp
+  const beam = el('path', { d: 'M0 0L250 -26A252 252 0 0 1 250 26Z', fill: 'url(#vyBeamG)', class: 'vy-lh__beam' });
+  const beamG = el('g', { transform: `translate(${LH[0]} ${LH[1]})` }, [beam]);
+  haz.append(beamG, el('g', { class: 'vy-lh' }, [
+    el('ellipse', { cx: LH[0], cy: LH[1] + 26, rx: 22, ry: 6, class: 'vy-lh__rock' }),
+    el('path', { d: `M${LH[0] - 5} ${LH[1] + 23}L${LH[0] - 3} ${LH[1] + 4}H${LH[0] + 3}L${LH[0] + 5} ${LH[1] + 23}Z`, class: 'vy-lh__tower' }),
+    el('rect', { x: LH[0] - 4, y: LH[1] - 4, width: 8, height: 7, rx: 1.5, class: 'vy-lh__lamp' }),
+    el('circle', { cx: LH[0], cy: LH[1], r: 10, class: 'vy-lh__halo' }),
+  ]));
+  const ROSE = [905, 535];
+  const sweep = el('path', { d: 'M0 0L960 -60A962 962 0 0 1 960 0Z', fill: 'url(#vySweepG)', class: 'vy-sweep' });
+  const sweepEdge = el('line', { x1: 0, y1: 0, x2: 960, y2: 0, class: 'vy-sweep__edge' });
+  const sweepG = el('g', { transform: `translate(${ROSE[0]} ${ROSE[1]})`, class: 'vy-sweep__g' }, [sweep, sweepEdge]);
+  haz.prepend(sweepG);
+  route.before(haz);
+
+  // compass: split into a slowly turning dial and a gently swinging star
+  const rose = firstPlace;
+  const dial = el('g', { class: 'vy-rose__dial' }), star = el('g', { class: 'vy-rose__star' });
+  [...rose.children].forEach((c) => {
+    if (c.classList.contains('vy-rose__tick') || c.classList.contains('vy-rose__ring--in')) dial.append(c);
+    else if (c.tagName === 'g' || c.classList.contains('vy-rose__hub')) star.append(c);
+  });
+  rose.insertBefore(dial, rose.querySelector('.vy-rose__n'));
+  rose.insertBefore(star, rose.querySelector('.vy-rose__n'));
+
+  // wake ripples sit behind the ship in chart coordinates; a gleam crosses the sails
+  const ripples = el('g', { class: 'vy-ripples', 'aria-hidden': 'true' });
+  ship.before(ripples);
+  const sails = ship.querySelector('g[transform] > g[fill]');
+  if (sails) {
+    sails.id = 'vySails';
+    defs.append(el('mask', { id: 'vySailMask', maskUnits: 'userSpaceOnUse', x: -20, y: -20, width: 80, height: 80 }, [el('use', { href: '#vySails' })]));
+    sails.parentNode.append(el('g', { mask: 'url(#vySailMask)' }, [el('rect', { x: -6, y: -4, width: 9, height: 48, class: 'vy-gleam', transform: 'skewX(-18)' })]));
+  }
+  // a light pulse that keeps flowing along the sailed route
+  const pulse = route.cloneNode(); pulse.removeAttribute('id'); pulse.setAttribute('class', 'vy-route vy-route--pulse');
+  done.after(pulse);
+  // event chips near the hazards (inside the SVG, so they stay aligned at any size)
+  const chips = HAZ.map((h) => {
+    const w = Math.round(h.chip.length * 6.3 + 22);
+    const [x, y] = h.at;
+    return el('g', { class: `vy-chip vy-chip--${h.tone}`, 'aria-hidden': 'true' }, [
+      el('rect', { x: x - w / 2, y: y - 11, width: w, height: 22, rx: 11, class: 'vy-chip__bg' }),
+      Object.assign(el('text', { x, y: y + 3.6, 'text-anchor': 'middle', class: 'vy-chip__t' }), { textContent: h.chip }),
+    ]);
+  });
+  ship.before(...chips);
+  // HUD readout with a blinking cursor
+  let hudText = null;
+  if (coords) { coords.textContent = ''; hudText = document.createElement('span'); coords.append(hudText, Object.assign(document.createElement('i'), { className: 'vy-cur' })); }
+
+  /* ---- scroll story ---- */
+  const isStatic = () => reduced || matchMedia('(max-width: 900px), (max-height: 540px)').matches;
+  let staticMode = null, active = -1, shown = -1, visible = false, raf = 0, curP = 0, hudAt = 0;
+
+  const place = (p, t) => {
     const at = Math.max(0.001, Math.min(0.999, p)) * L;
     const a = route.getPointAtLength(at), b = route.getPointAtLength(Math.min(L, at + 6));
     const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
     const tilt = Math.max(-16, Math.min(16, ang * 0.3)); // keep the sails readable: heel, don't spin
-    const bob = Math.sin(performance.now() / 650) * 1.6;
-    ship.setAttribute('transform', `translate(${a.x.toFixed(1)} ${(a.y + bob).toFixed(1)}) rotate(${tilt.toFixed(1)})`);
+    const bob = reduced ? 0 : Math.sin(t / 650) * 1.6;
+    const roll = reduced ? 0 : Math.sin(t / 1100) * 2.4;
+    ship.setAttribute('transform', `translate(${a.x.toFixed(1)} ${(a.y + bob).toFixed(1)}) rotate(${(tilt + roll).toFixed(2)})`);
     done.style.strokeDashoffset = (L - at).toFixed(1);
-    if (coords) coords.textContent = `LAT ${(24 + (520 - a.y) / 40).toFixed(2)}°N · LON ${(10 + a.x / 20).toFixed(2)}°E · HDG ${String(Math.round((90 + ang + 360) % 360)).padStart(3, '0')}°`;
+    if (hudText && (t - hudAt > 380 || reduced)) {
+      hudAt = t;
+      const j = reduced ? 0 : (Math.sin(t / 233) + Math.sin(t / 97)) * 0.004;
+      hudText.textContent = `LAT ${(24 + (520 - a.y) / 40 + j).toFixed(2)}°N · LON ${(10 + a.x / 20 - j).toFixed(2)}°E · HDG ${String(Math.round((90 + ang + roll + 360) % 360)).padStart(3, '0')}°`;
+    }
+    return { a, at };
   };
   const setChapter = (i) => {
     if (i === active) return;
@@ -556,19 +658,62 @@ $$('.post-art').forEach((cv) => {
     const span = r.height - innerHeight;
     return span > 0 ? Math.max(0, Math.min(1, -r.top / span)) : 0;
   };
+
+  /* ---- ambient motion, driven from the same frame loop ---- */
+  const bearing = (x, y) => (Math.atan2(y - ROSE[1], x - ROSE[0]) * 180 / Math.PI + 360) % 360;
+  const HAZ_BEARING = HAZ.map((h) => bearing(...h.c));
+  let lastRipple = 0, chipAt = 0, chipIdx = 0, chipOn = -1, pinged = [0, 0, 0];
+  const ambient = (t, shipPos) => {
+    // compass sweep (one turn per 9 s) lights up the hazards it passes
+    const sw = (t / 25) % 360; // degrees
+    sweepG.setAttribute('transform', `translate(${ROSE[0]} ${ROSE[1]}) rotate(${sw.toFixed(1)})`);
+    HAZ_BEARING.forEach((hb, i) => {
+      const d = ((sw - hb + 540) % 360) - 180;
+      if (d > -2 && d < 4 && t - pinged[i] > 2000) { pinged[i] = t; isles[i]?.classList.add('is-pinged'); setTimeout(() => isles[i]?.classList.remove('is-pinged'), 1300); }
+    });
+    // lighthouse beam turns, compass dial creeps, star swings
+    beamG.setAttribute('transform', `translate(${LH[0]} ${LH[1]}) rotate(${((t / 28) % 360).toFixed(1)})`);
+    dial.setAttribute('transform', `rotate(${((t / 400) % 360).toFixed(2)})`);
+    star.setAttribute('transform', `rotate(${(Math.sin(t / 1700) * 3.2 + Math.sin(t / 530) * 0.8).toFixed(2)})`);
+    // a comet of light runs along the sailed part of the route
+    const sailed = shipPos.at;
+    if (sailed > 30) {
+      const len = 70, period = Math.max(1600, sailed * 3.2);
+      const head = ((t % period) / period) * (sailed + len);
+      pulse.style.strokeDasharray = `${len} ${L * 2}`;
+      pulse.style.strokeDashoffset = (len - Math.min(head, sailed + len)).toFixed(1);
+      pulse.style.opacity = head > sailed ? Math.max(0, 1 - (head - sailed) / len).toFixed(2) : '1';
+    } else pulse.style.opacity = '0';
+    // wake ripples
+    if (t - lastRipple > 750) {
+      lastRipple = t;
+      const r = el('ellipse', { cx: shipPos.a.x.toFixed(1), cy: (shipPos.a.y + 15).toFixed(1), rx: 7, ry: 1.8, class: 'vy-ripple' });
+      r.addEventListener('animationend', () => r.remove());
+      ripples.append(r);
+      while (ripples.childElementCount > 8) ripples.firstChild.remove();
+    }
+    // one event chip every ~7 s
+    if (chipOn >= 0 && t - chipAt > 2800) { chips[chipOn].classList.remove('is-on'); chipOn = -1; }
+    if (chipOn < 0 && t - chipAt > 7000) { chipAt = t; chipOn = chipIdx; chips[chipIdx].classList.add('is-on'); chipIdx = (chipIdx + 1) % chips.length; }
+  };
+
   let smooth = 0, last = performance.now();
   const frame = () => {
     raf = 0;
-    if (staticMode || !visible) return;
+    if (!visible) return;
     const now = performance.now(), dt = Math.min(0.25, (now - last) / 1000); last = now;
-    const p = progress();
-    smooth += (p - smooth) * (1 - Math.exp(-dt * 9)); // frame-rate independent easing
-    if (Math.abs(p - smooth) < 0.0005) smooth = p;
-    place(smooth);
-    bar.style.transform = `scaleX(${smooth.toFixed(4)})`;
-    let ch = 0;
-    WP.forEach((f, k) => { if (p + 0.03 >= f) ch = k; }); // chapters follow the real scroll position
-    setChapter(ch);
+    if (!staticMode) {
+      const p = progress();
+      smooth += (p - smooth) * (1 - Math.exp(-dt * 9)); // frame-rate independent easing
+      if (Math.abs(p - smooth) < 0.0005) smooth = p;
+      curP = smooth;
+      bar.style.transform = `scaleX(${smooth.toFixed(4)})`;
+      let ch = 0;
+      WP.forEach((f, k) => { if (p + 0.03 >= f) ch = k; }); // chapters follow the real scroll position
+      setChapter(ch);
+    }
+    const pos = place(curP, now);
+    if (!reduced) ambient(now, pos);
     raf = requestAnimationFrame(frame);
   };
   const apply = () => {
@@ -576,13 +721,19 @@ $$('.post-art').forEach((cv) => {
     if (s === staticMode) return;
     staticMode = s;
     sec.classList.toggle('voyage--static', s);
-    if (s) { place(0.999); wps.forEach((w) => w.classList.add('is-lit')); cards.forEach((c) => c.classList.add('is-on')); active = shown = -1; }
-    else { cards.forEach((c, k) => c.classList.toggle('is-on', k === 0)); active = shown = -1; smooth = progress(); setChapter(0); if (visible && !raf) raf = requestAnimationFrame(frame); }
+    if (s) { curP = 0.999; place(curP, performance.now()); wps.forEach((w) => w.classList.add('is-lit')); cards.forEach((c) => c.classList.add('is-on')); active = shown = -1; }
+    else { cards.forEach((c, k) => c.classList.toggle('is-on', k === 0)); active = shown = -1; smooth = progress(); setChapter(0); }
+    if (visible && !raf && !reduced) raf = requestAnimationFrame(frame);
   };
-  new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && !staticMode && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }, { rootMargin: '100px 0px' }).observe(track);
+  // run only while the section is on screen; CSS animations pause with it
+  new IntersectionObserver(([e]) => {
+    visible = e.isIntersecting;
+    sec.classList.toggle('vy-paused', !visible);
+    if (visible && !raf && (!reduced || !staticMode)) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  }, { rootMargin: '100px 0px' }).observe(track);
   addEventListener('resize', apply, { passive: true });
   apply();
-  if (!staticMode) place(0);
+  if (!staticMode) place(0, performance.now());
 })();
 
 /* ---------- cross-page transitions: native View Transitions, gold curtain fallback ---------- */

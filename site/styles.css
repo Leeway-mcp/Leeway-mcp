@@ -1366,3 +1366,75 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .crew__go { margin-top: auto; align-self: flex-start; font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #e9dcb8; padding: 7px 12px; border: 1px solid rgba(231, 185, 79, 0.32); border-radius: 100px; transition: background 0.3s, color 0.3s; }
 .crew__card:hover .crew__go { background: var(--gold); color: #1a1205; border-color: transparent; }
 @media (max-width: 900px) { .crew { grid-template-columns: 1fr; } }
+
+/* ---------- the voyage: living chart ---------- */
+.vy-amb, .vy-haz, .vy-ripples, .vy-chip { pointer-events: none; }
+.vy-swell__l { fill: none; stroke: rgba(160, 175, 255, 0.11); stroke-width: 1; stroke-linecap: round; }
+.vy-swell__l--b { stroke: rgba(231, 185, 79, 0.09); }
+.vy-swell { animation: vySwell 22s linear infinite; }
+@keyframes vySwell { to { transform: translateX(-120px); } }
+.vy-fog { opacity: 0.9; }
+.vy-fog--a { animation: vyFogA 26s ease-in-out infinite; }
+.vy-fog--b { animation: vyFogB 31s ease-in-out infinite; }
+@keyframes vyFogA { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(70px, -16px); } }
+@keyframes vyFogB { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-60px, 18px); } }
+.vy-spark { fill: #ffeec2; opacity: 0; animation: vyTwinkle 5s ease-in-out infinite; }
+@keyframes vyTwinkle { 0%, 100% { opacity: 0; } 45% { opacity: 0; } 55% { opacity: 0.75; } 70% { opacity: 0.1; } }
+
+.vy-route:not(.vy-route--done):not(.vy-route--pulse) { animation: vyMarch 1.4s linear infinite; }
+@keyframes vyMarch { to { stroke-dashoffset: -9; } }
+.vy-route--pulse { stroke: #fff6dc; stroke-width: 3.2; stroke-dasharray: none; stroke-linecap: round; filter: url(#vyGlow); opacity: 0; mix-blend-mode: screen; }
+
+.vy-depth--0 { animation: vyDepthMarch 9s linear infinite; }
+.vy-depth--1 { animation: vyBreathe 7s ease-in-out infinite; }
+.vy-depth--2 { animation: vyBreathe 7s ease-in-out -2.3s infinite; }
+@keyframes vyDepthMarch { to { stroke-dashoffset: -60; } }
+@keyframes vyBreathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.vy-isl .vy-land { transition: fill 0.5s, stroke 0.5s; }
+.vy-isl.is-pinged .vy-land { fill: rgba(255, 120, 90, 0.16); stroke: rgba(255, 150, 110, 0.9); }
+.vy-isl.is-pinged .vy-depth--3 { stroke: rgba(255, 140, 100, 0.55); }
+
+.vy-wp__ping { fill: none; stroke: rgba(255, 226, 150, 0.7); stroke-width: 1; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.vy-wp.is-lit .vy-wp__ping { animation: vyPing 3.6s ease-out infinite; }
+@keyframes vyPing { 0% { transform: scale(1); opacity: 0.7; } 60%, 100% { transform: scale(3.4); opacity: 0; } }
+
+.vy-port__star { transform-box: fill-box; transform-origin: center; animation: vyStar 3.4s ease-in-out infinite; }
+@keyframes vyStar { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.22); opacity: 1; } }
+.vy-ripple { fill: none; stroke: rgba(255, 226, 150, 0.45); stroke-width: 1; transform-box: fill-box; transform-origin: center; animation: vyRipple 2.6s ease-out forwards; }
+@keyframes vyRipple { from { transform: scale(1); opacity: 0.6; } to { transform: scale(5.5); opacity: 0; } }
+.vy-gleam { fill: rgba(255, 255, 255, 0.85); animation: vyGleam 5.2s ease-in-out infinite; }
+@keyframes vyGleam { 0%, 60% { transform: translateX(-14px); opacity: 0; } 64% { opacity: 1; } 84% { opacity: 1; } 88%, 100% { transform: translateX(46px); opacity: 0; } }
+
+.vy-beacon__post { stroke: rgba(231, 185, 79, 0.5); stroke-width: 1.2; }
+.vy-beacon__base { fill: #0b0b11; stroke: rgba(231, 185, 79, 0.45); stroke-width: 1; }
+.vy-beacon__light, .vy-beacon__glow { animation: vyBlink 2.8s ease-in-out infinite; }
+.vy-beacon--red .vy-beacon__light { fill: #ff6b5a; } .vy-beacon--red .vy-beacon__glow { fill: rgba(255, 90, 70, 0.28); }
+.vy-beacon--amber .vy-beacon__light { fill: #ffb43a; } .vy-beacon--amber .vy-beacon__glow { fill: rgba(255, 176, 50, 0.26); }
+.vy-beacon:nth-child(2) .vy-beacon__light, .vy-beacon:nth-child(2) .vy-beacon__glow { animation-delay: -0.9s; }
+.vy-beacon:nth-child(3) .vy-beacon__light, .vy-beacon:nth-child(3) .vy-beacon__glow { animation-delay: -1.8s; }
+@keyframes vyBlink { 0%, 64%, 100% { opacity: 0.25; } 70%, 86% { opacity: 1; } }
+.vy-lh__rock { fill: rgba(231, 185, 79, 0.08); stroke: rgba(231, 185, 79, 0.45); stroke-width: 1; }
+.vy-lh__tower { fill: #12111a; stroke: rgba(231, 185, 79, 0.7); stroke-width: 1; }
+.vy-lh__lamp { fill: #ffe6a6; }
+.vy-lh__halo { fill: rgba(255, 226, 150, 0.18); animation: vyBreathe 3s ease-in-out infinite; }
+.vy-lh__beam { mix-blend-mode: screen; opacity: 0.55; }
+.vy-sweep { mix-blend-mode: screen; }
+.vy-sweep__edge { stroke: rgba(255, 226, 150, 0.16); stroke-width: 1; }
+@media (max-width: 560px) { .vy-sweep__g, .vy-chip { display: none; } }
+
+.vy-chip { opacity: 0; transform: translateY(5px); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); }
+.vy-chip.is-on { opacity: 1; transform: none; }
+.vy-chip__bg { fill: rgba(9, 9, 14, 0.88); stroke-width: 1; }
+.vy-chip--red .vy-chip__bg { stroke: rgba(255, 110, 90, 0.55); } .vy-chip--red .vy-chip__t { fill: #ff9b8a; }
+.vy-chip--amber .vy-chip__bg { stroke: rgba(255, 180, 60, 0.55); } .vy-chip--amber .vy-chip__t { fill: #ffc76a; }
+.vy-chip__t { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.04em; }
+
+.vy-cur { display: inline-block; width: 6px; height: 11px; margin-left: 6px; vertical-align: -1px; background: var(--gold-2); animation: vyCur 1.05s steps(1) infinite; }
+@keyframes vyCur { 50% { opacity: 0; } }
+
+.voyage.vy-paused * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .voyage .vy-swell, .voyage .vy-fog, .voyage .vy-spark, .voyage .vy-route, .voyage .vy-depth, .voyage .vy-wp__ping, .voyage .vy-port__star,
+  .voyage .vy-gleam, .voyage .vy-beacon__light, .voyage .vy-beacon__glow, .voyage .vy-lh__halo, .voyage .vy-cur { animation: none !important; }
+  .voyage .vy-spark, .voyage .vy-sweep__g, .voyage .vy-lh__beam, .voyage .vy-gleam { display: none; }
+}
