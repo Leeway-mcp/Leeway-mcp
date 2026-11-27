@@ -6,7 +6,7 @@ Leeway sits between AI agents and money, so we treat security reports as the hig
 
 **Please do not open a public issue for security problems.**
 
-Report privately through GitHub: **Security → Report a vulnerability** on [Leeway-mcp/Leeway-mcp](https://github.com/Leeway-mcp/Leeway-mcp/security/advisories/new). If that is not possible, message the team on [Telegram](https://t.me/leewaymcp) and ask for a private channel; do not post details in the public chat.
+Report privately through GitHub: **Security → Report a vulnerability** on [Leeway-mcp/Leeway-mcp](https://github.com/Leeway-mcp/Leeway-mcp/security/advisories/new). If that is not possible, email [support@leeway.icu](mailto:support@leeway.icu) with "Security" in the subject, or message the team on [Telegram](https://t.me/leewaymcp) and ask for a private channel; do not post details in the public chat.
 
 Include what you can: affected component and version, steps to reproduce, impact, and a suggested fix if you have one.
 

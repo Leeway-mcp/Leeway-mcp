@@ -47,7 +47,7 @@ Leeway Guard reduces risk; it cannot remove it. Always read what you sign.
 https://leeway.icu/privacy.html
 
 ## Homepage / support
-Homepage: https://leeway.icu/ · Source: https://github.com/Leeway-mcp/Leeway-mcp · Support: https://t.me/leewaymcp · Issues: https://github.com/Leeway-mcp/Leeway-mcp/issues
+Homepage: https://leeway.icu/ · Source: https://github.com/Leeway-mcp/Leeway-mcp · Support: support@leeway.icu · https://t.me/leewaymcp · Issues: https://github.com/Leeway-mcp/Leeway-mcp/issues
 
 ## Permission justifications (for reviewers)
 

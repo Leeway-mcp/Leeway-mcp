@@ -6,3 +6,7 @@ node_modules/
 # build output
 extension/dist/
 dist/
+
+# local marketing renders (heavy)
+docs/twitter/video-ad/
+docs/twitter/video-ad-v2/

@@ -16,6 +16,6 @@ We want Leeway to be a welcoming project for everyone, whatever their experience
 
 ## Scope and enforcement
 
-This applies to the repository, issues, pull requests, the Telegram group and other official Leeway spaces. Maintainers may remove content, warn, or ban participants who break these rules. Report problems privately to the maintainers via [Telegram](https://t.me/leewaymcp).
+This applies to the repository, issues, pull requests, the Telegram group and other official Leeway spaces. Maintainers may remove content, warn, or ban participants who break these rules. Report problems privately to the maintainers at [support@leeway.icu](mailto:support@leeway.icu) or via [Telegram](https://t.me/leewaymcp).
 
 This code is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1.
